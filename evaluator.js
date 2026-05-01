@@ -53,6 +53,8 @@ ABBREVIATION ALLOWLIST（以下縮寫屬精確用語，不列入 hedges）：
 - 「TQ at 14:32」是精確的  |  「BP 90/60」是精確的  |  「GCS 13」是精確的
 
 ORDER DETECTION — 辨識逐字稿中每個 MIST 要素第一次出現的順序，並回傳對應的排列代碼。
+必須從以下選項中擇一回傳，不得自行造字：
+"MIST" | "MITS" | "MSIT" | "MTSI" | "IMST" | "ISMS" | "SMIT" | "TMIS" | "TIMS" | "out-of-order" | "incomplete"
 若少於 4 個要素出現，回傳 "incomplete"。
 寧可過度標記順序錯誤，也不要漏報——漏報的風險高於誤報。
 
