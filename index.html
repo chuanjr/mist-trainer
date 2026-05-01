@@ -899,6 +899,7 @@ if (isIosSafari) document.getElementById("ios-warning").classList.remove("hidden
 // ── API keys (localStorage) ────────────────────────────────────────────────
 const KEY_STORAGE = "mist_api_key";
 const GROQ_KEY_STORAGE = "mist_groq_key";
+const ACCESS_CODE_STORAGE = "mist_access_code";
 let apiKey = localStorage.getItem(KEY_STORAGE) || "";
 let groqKey = localStorage.getItem(GROQ_KEY_STORAGE) || "";
 
@@ -931,13 +932,41 @@ tabManualBtn.addEventListener("click", () => showTab("manual"));
 function openSettings() {
   apiKeyInput.value = apiKey;
   groqKeyInput.value = groqKey;
-  // If keys already set, show manual tab so user can see/edit them
   if (apiKey && groqKey) showTab("manual"); else showTab("code");
   settingsOverlay.classList.remove("hidden");
 }
 function closeSettings() { settingsOverlay.classList.add("hidden"); }
 
-if (!apiKey || !groqKey) openSettings();
+// ── Auto-unlock on page load ───────────────────────────────────────────────
+// If keys are missing but a saved access code exists, silently re-unlock.
+async function initKeys() {
+  if (apiKey && groqKey) return; // already have keys from localStorage
+  const savedCode = localStorage.getItem(ACCESS_CODE_STORAGE);
+  if (!savedCode) { openSettings(); return; }
+  try {
+    const res = await fetch("/api/unlock", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code: savedCode })
+    });
+    const data = await res.json();
+    if (res.ok && data.anthropicKey && data.groqKey) {
+      apiKey = data.anthropicKey;
+      groqKey = data.groqKey;
+      localStorage.setItem(KEY_STORAGE, apiKey);
+      localStorage.setItem(GROQ_KEY_STORAGE, groqKey);
+      // No settings modal — silently unlocked
+    } else {
+      // Code expired or changed — clear it, ask user to re-enter
+      localStorage.removeItem(ACCESS_CODE_STORAGE);
+      openSettings();
+    }
+  } catch {
+    // Network error — fall back to cached keys or show settings
+    if (!apiKey || !groqKey) openSettings();
+  }
+}
+initKeys();
 
 document.getElementById("gear-btn").addEventListener("click", openSettings);
 
@@ -989,6 +1018,7 @@ async function doUnlock() {
       groqKey = data.groqKey;
       localStorage.setItem(KEY_STORAGE, apiKey);
       localStorage.setItem(GROQ_KEY_STORAGE, groqKey);
+      localStorage.setItem(ACCESS_CODE_STORAGE, code); // remember code for auto-unlock
       unlockStatus.textContent = "✅ 解鎖成功！";
       unlockStatus.className = "ok";
       setTimeout(() => closeSettings(), 800);
