@@ -153,7 +153,8 @@ async function evaluate(scenario, transcript, durationSec, apiKey) {
     } else if (err.name === "AbortError") {
       return { error: "timeout" };
     } else {
-      throw err;
+      // Return structured error instead of throwing — lets the caller surface the right message
+      return { error: err.code || "api_error", message: err.message };
     }
   }
 

@@ -1192,39 +1192,65 @@ function resetTimer() {
 }
 
 // ── Distraction system (Web Audio API) ────────────────────────────────────
+// Continuous looping white noise at low volume; occasional volume surges every 8–15s
 let distractionCtx = null;
+let distractionGain = null;
 let distractionTimer = null;
-
-function createDistraction() {
-  const ctx = new AudioContext();
-  const bufferSize = Math.floor(ctx.sampleRate * 0.3);
-  const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-  const data = buffer.getChannelData(0);
-  for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * 0.15;
-  const source = ctx.createBufferSource();
-  source.buffer = buffer;
-  source.connect(ctx.destination);
-  source.start();
-  return ctx;
-}
 
 function startDistractions() {
   const noiseEnabled = document.getElementById("noise-toggle").checked;
   if (!noiseEnabled) return;
-  function burst() {
-    try {
-      if (distractionCtx) { try { distractionCtx.close(); } catch(e){} }
-      distractionCtx = createDistraction();
-    } catch(e) {}
-    const delay = 8000 + Math.random() * 7000; // 8–15s
-    distractionTimer = setTimeout(burst, delay);
-  }
-  distractionTimer = setTimeout(burst, 1500 + Math.random() * 3000);
+  try {
+    distractionCtx = new AudioContext();
+    const ctx = distractionCtx;
+
+    // 2-second looping white noise buffer
+    const bufferSec = 2;
+    const buf = ctx.createBuffer(1, ctx.sampleRate * bufferSec, ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1);
+
+    const source = ctx.createBufferSource();
+    source.buffer = buf;
+    source.loop = true;
+
+    distractionGain = ctx.createGain();
+    distractionGain.gain.value = 0.08; // quiet baseline
+
+    source.connect(distractionGain);
+    distractionGain.connect(ctx.destination);
+    source.start();
+
+    // Schedule volume surges every 8–15s
+    function scheduleBurst() {
+      const delay = 8000 + Math.random() * 7000;
+      distractionTimer = setTimeout(() => {
+        if (!distractionGain || !distractionCtx) return;
+        const t = distractionCtx.currentTime;
+        distractionGain.gain.cancelScheduledValues(t);
+        distractionGain.gain.setValueAtTime(0.08, t);
+        distractionGain.gain.linearRampToValueAtTime(0.35, t + 0.4);  // ramp up
+        distractionGain.gain.linearRampToValueAtTime(0.08, t + 2.5);  // fade back
+        scheduleBurst();
+      }, delay);
+    }
+    scheduleBurst();
+  } catch(e) {}
 }
 
 function stopDistractions() {
   if (distractionTimer) { clearTimeout(distractionTimer); distractionTimer = null; }
-  if (distractionCtx) { try { distractionCtx.close(); } catch(e){} distractionCtx = null; }
+  if (distractionCtx) {
+    try {
+      // Fade out cleanly before closing
+      if (distractionGain) {
+        distractionGain.gain.linearRampToValueAtTime(0, distractionCtx.currentTime + 0.3);
+      }
+      setTimeout(() => { try { distractionCtx.close(); } catch(e){} }, 350);
+    } catch(e) {}
+    distractionCtx = null;
+    distractionGain = null;
+  }
 }
 
 // ── Record button ─────────────────────────────────────────────────────────
@@ -1331,12 +1357,16 @@ async function runEvaluation(transcript, durationSec, scenario) {
       openSettings();
       return;
     }
+    if (result.error === "rate_limit") {
+      showEvalError("API 請求頻率過高，請稍後再試。", startRecording);
+      return;
+    }
     if (result.error === "timeout") {
       showEvalError("評估逾時，請重試。", startRecording);
       return;
     }
     if (result.error) {
-      showEvalError("評估失敗，請重試。", startRecording);
+      showEvalError(`評估失敗（${result.error}）：${result.message || "請重試"}`, startRecording);
       return;
     }
 
@@ -1344,7 +1374,9 @@ async function runEvaluation(transcript, durationSec, scenario) {
   } catch (err) {
     loadingCard.classList.add("hidden");
     recordBtn.disabled = false;
-    showEvalError("發生未預期錯誤，請重試。", startRecording);
+    const code = err && (err.code || err.message) || "unknown";
+    if (code === "invalid_key") { openSettings(); return; }
+    showEvalError(`發生未預期錯誤（${code}），請重試。`, startRecording);
   }
 }
 
