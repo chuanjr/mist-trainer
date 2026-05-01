@@ -106,14 +106,23 @@ async function callClaude(apiKey, scenario, transcript) {
     messages: [{ role: "user", content: buildUserContent(scenario, transcript) }]
   };
 
-  const res = await fetch(ANTHROPIC_API_URL, {
+  // In browser: proxy through /api/evaluate to avoid CORS issues.
+  // In Node.js (tests): call Anthropic directly.
+  const isNode = typeof module !== "undefined";
+  const url = isNode ? ANTHROPIC_API_URL : "/api/evaluate";
+  const headers = { "Content-Type": "application/json" };
+  if (isNode) {
+    headers["x-api-key"] = apiKey;
+    headers["anthropic-version"] = "2023-06-01";
+    headers["anthropic-dangerous-allow-browser"] = "true";
+  } else {
+    // Proxy uses MIST_ANTHROPIC_KEY env var; fall back to client key for self-hosted users
+    headers["x-api-key"] = apiKey;
+  }
+
+  const res = await fetch(url, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-      "anthropic-dangerous-allow-browser": "true"
-    },
+    headers,
     body: JSON.stringify(body)
   });
 

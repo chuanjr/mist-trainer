@@ -97,6 +97,8 @@ const Speech = (() => {
     form.append('model', 'whisper-large-v3-turbo');
     form.append('language', 'zh');
     form.append('response_format', 'json');
+    // Domain prompt reduces hallucinations on short/silent audio
+    form.append('prompt', 'MIST傷患交接報告。傷害機轉、受傷部位、生命徵象、已給處置。TQ、GCS、BP、HR、SpO2。');
 
     try {
       const res = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
@@ -113,6 +115,18 @@ const Speech = (() => {
       const text = (data.text || '').trim();
 
       if (!text) { onError("no-speech"); return; }
+
+      // Whisper hallucination filter — known phantom phrases on silent/short audio
+      const HALLUCINATIONS = [
+        '请不吝点赞', '订阅', '转发', '打赏', '明镜', '点点栏目',
+        'Thank you for watching', 'Thanks for watching',
+        'Please subscribe', '字幕', '翻譯',
+        'www.', '.com', '.net',
+      ];
+      if (HALLUCINATIONS.some(h => text.includes(h))) {
+        onError("no-speech");
+        return;
+      }
 
       if (interimEl) interimEl.textContent = text;
       onResult({ transcript: text, durationSec });
