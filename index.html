@@ -1,114 +1,183 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MIST Trainer</title>
+  <title>MIST 戰傷報告訓練</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg: #0d1117;
-      --surface: #161b22;
-      --border: #30363d;
-      --text: #e6edf3;
-      --muted: #8b949e;
-      --accent: #58a6ff;
-      --danger: #f85149;
-      --warn: #d29922;
-      --success: #3fb950;
-      --red-timer: #f85149;
+      --bg: #f0f4ff;
+      --surface: #ffffff;
+      --border: #d0d8f0;
+      --text: #1a1f36;
+      --muted: #6b7499;
+      --accent: #4f46e5;
+      --accent2: #ec4899;
+      --accent3: #f59e0b;
+      --danger: #ef4444;
+      --warn: #f59e0b;
+      --success: #10b981;
+      --pressure-bg: #fff1f2;
+      --pressure-border: #fca5a5;
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: var(--bg);
+      font-family: "Noto Sans TC", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: linear-gradient(135deg, #e8eeff 0%, #f0f4ff 50%, #e0f0ff 100%);
       color: var(--text);
       min-height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 24px 16px;
+      padding: 0 0 40px;
     }
 
+    /* ── Header ── */
     header {
       width: 100%;
-      max-width: 640px;
+      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 60%, #a21caf 100%);
+      padding: 28px 20px 24px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 32px;
+      margin-bottom: 28px;
+      box-shadow: 0 4px 20px rgba(79,70,229,0.3);
     }
 
-    h1 { font-size: 1.1rem; font-weight: 600; letter-spacing: 0.05em; }
-    .subtitle { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+    header > div { flex: 1; }
+
+    h1 {
+      font-size: 1.3rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: #fff;
+    }
+    .subtitle {
+      font-size: 0.72rem;
+      color: rgba(255,255,255,0.75);
+      margin-top: 3px;
+      letter-spacing: 0.02em;
+    }
 
     #gear-btn {
-      background: none;
-      border: 1px solid var(--border);
-      color: var(--muted);
-      padding: 6px 10px;
-      border-radius: 6px;
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.3);
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 10px;
       cursor: pointer;
-      font-size: 1rem;
+      font-size: 1.1rem;
       line-height: 1;
+      transition: background 0.2s;
     }
-    #gear-btn:hover { color: var(--text); border-color: var(--accent); }
+    #gear-btn:hover { background: rgba(255,255,255,0.25); }
 
-    /* iOS Safari warning */
+    /* ── iOS Safari warning ── */
     #ios-warning {
       width: 100%;
       max-width: 640px;
-      background: #2d1f00;
+      background: #fffbeb;
       border: 1px solid var(--warn);
-      border-radius: 8px;
+      border-radius: 12px;
       padding: 10px 14px;
       font-size: 0.82rem;
-      color: #e3b341;
-      margin-bottom: 20px;
+      color: #92400e;
+      margin: 0 auto 16px;
     }
 
-    /* Settings overlay */
+    /* ── Settings overlay ── */
     #settings-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.7);
+      background: rgba(26,31,54,0.6);
+      backdrop-filter: blur(4px);
       display: flex;
       align-items: center;
       justify-content: center;
       z-index: 100;
+      padding: 16px;
     }
     #settings-overlay.hidden { display: none; }
 
     .settings-box {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 28px 24px;
+      border-radius: 20px;
+      padding: 32px 28px;
       width: 100%;
-      max-width: 400px;
+      max-width: 420px;
+      box-shadow: 0 20px 60px rgba(79,70,229,0.15);
     }
-    .settings-box h2 { font-size: 1rem; margin-bottom: 16px; }
-    .settings-box label { font-size: 0.82rem; color: var(--muted); display: block; margin-bottom: 6px; }
-    .settings-box input {
+    .settings-box h2 {
+      font-size: 1.1rem;
+      margin-bottom: 20px;
+      color: var(--text);
+      font-weight: 700;
+    }
+    .settings-box label {
+      font-size: 0.82rem;
+      color: var(--muted);
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+    .settings-box input[type="password"] {
       width: 100%;
       background: var(--bg);
       border: 1px solid var(--border);
       color: var(--text);
-      padding: 8px 12px;
-      border-radius: 6px;
+      padding: 10px 14px;
+      border-radius: 10px;
       font-size: 0.9rem;
-      margin-bottom: 16px;
+      margin-bottom: 8px;
       font-family: monospace;
+      transition: border-color 0.2s;
     }
-    .settings-box input:focus { outline: none; border-color: var(--accent); }
-    .settings-hint { font-size: 0.75rem; color: var(--muted); margin-bottom: 20px; }
+    .settings-box input[type="password"]:focus { outline: none; border-color: var(--accent); }
+
+    .settings-noise-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 16px 0;
+      padding: 12px 14px;
+      background: var(--bg);
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+    .settings-noise-row label {
+      margin: 0;
+      font-size: 0.88rem;
+      color: var(--text);
+      font-weight: 500;
+      cursor: pointer;
+    }
+    #noise-toggle {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--accent);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .settings-hint {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-bottom: 20px;
+      line-height: 1.6;
+    }
     .settings-hint a { color: var(--accent); }
 
-    /* Main card */
+    /* ── Main layout ── */
     main {
       width: 100%;
       max-width: 640px;
+      padding: 0 16px;
       display: flex;
       flex-direction: column;
       gap: 20px;
@@ -117,150 +186,355 @@
     .card {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 20px;
+      border-radius: 16px;
+      padding: 22px;
+      box-shadow: 0 2px 16px rgba(79,70,229,0.07);
     }
 
-    /* Scenario picker */
-    #scenario-label { font-size: 0.75rem; color: var(--muted); margin-bottom: 8px; }
-    #scenario-select {
-      width: 100%;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      color: var(--text);
-      padding: 10px 12px;
-      border-radius: 6px;
-      font-size: 0.9rem;
-      cursor: pointer;
-      appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238b949e' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 12px center;
-      padding-right: 32px;
+    /* ── Scenario card ── */
+    #scenario-card {
+      position: relative;
     }
-    #scenario-select:focus { outline: none; border-color: var(--accent); }
+    #scenario-card.pressure-mode {
+      background: var(--pressure-bg);
+      border-color: var(--pressure-border);
+    }
+
+    .scenario-section-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 10px;
+    }
+
+    #scenario-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 12px;
+      line-height: 1.4;
+    }
+    .scenario-emoji {
+      font-size: 1.8rem;
+      margin-bottom: 8px;
+      display: block;
+    }
 
     .scenario-meta {
       display: flex;
-      gap: 12px;
-      margin-top: 10px;
+      gap: 8px;
+      margin-bottom: 14px;
       flex-wrap: wrap;
+      align-items: center;
     }
     .badge {
-      font-size: 0.7rem;
-      padding: 2px 8px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 4px 10px;
       border-radius: 20px;
-      border: 1px solid var(--border);
+      border: 1.5px solid var(--border);
       color: var(--muted);
+      background: var(--bg);
     }
-    .badge.pressure { border-color: var(--danger); color: var(--danger); }
+    .badge.pressure {
+      border-color: var(--danger);
+      color: var(--danger);
+      background: #fff1f2;
+    }
+    .badge.time {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: #eef2ff;
+    }
 
-    /* MIST guide header */
+    #random-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: none;
+      border: 2px solid var(--accent);
+      color: var(--accent);
+      padding: 8px 16px;
+      border-radius: 12px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+    #random-btn:hover {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    /* ── MIST guide ── */
     #mist-guide {
       font-size: 0.78rem;
-      color: var(--muted);
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       gap: 8px;
-      margin-top: 14px;
+      margin-top: 16px;
     }
     .mist-letter {
       background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 8px;
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 6px;
       text-align: center;
+      font-size: 0.7rem;
+      color: var(--muted);
+      line-height: 1.4;
     }
-    .mist-letter span { display: block; font-size: 1.1rem; font-weight: 700; color: var(--accent); }
+    .mist-letter span {
+      display: block;
+      font-size: 1.3rem;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+    .mist-letter:nth-child(1) span { color: #4f46e5; }
+    .mist-letter:nth-child(2) span { color: #ec4899; }
+    .mist-letter:nth-child(3) span { color: #f59e0b; }
+    .mist-letter:nth-child(4) span { color: #10b981; }
 
-    /* Record section */
-    #record-card { text-align: center; }
+    /* ── Scene panel ── */
+    #scene-panel {
+      width: 100%;
+      height: 180px;
+      border-radius: 16px;
+      overflow: hidden;
+      position: relative;
+      box-shadow: 0 2px 16px rgba(79,70,229,0.1);
+    }
+
+    /* Scene A — Urban Combat */
+    .scene-urban {
+      background: linear-gradient(180deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    }
+    .scene-urban .smoke {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(150,150,150,0.4);
+      animation: smokeDrift 4s ease-in-out infinite;
+    }
+    .scene-urban .smoke:nth-child(1) { width: 80px; height: 50px; top: 20px; left: 60px; animation-delay: 0s; }
+    .scene-urban .smoke:nth-child(2) { width: 60px; height: 40px; top: 35px; left: 180px; animation-delay: 1.5s; }
+    .scene-urban .smoke:nth-child(3) { width: 70px; height: 45px; top: 15px; right: 80px; animation-delay: 0.8s; }
+    @keyframes smokeDrift {
+      0%, 100% { transform: translateY(0) translateX(0) scale(1); opacity: 0.5; }
+      50% { transform: translateY(-15px) translateX(8px) scale(1.15); opacity: 0.8; }
+    }
+    .scene-urban .cross-marker {
+      position: absolute;
+      bottom: 20px;
+      right: 30px;
+      width: 40px;
+      height: 40px;
+      animation: crossPulse 1.5s ease-in-out infinite;
+    }
+    @keyframes crossPulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.2); opacity: 0.7; }
+    }
+
+    /* Scene B — Evacuation/Accident */
+    .scene-road {
+      background: linear-gradient(180deg, #1e3a5f 0%, #2d6a8f 40%, #4a4a4a 60%, #333 100%);
+    }
+    .scene-road .flash-light {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 60px;
+      height: 30px;
+      background: radial-gradient(circle, #ef4444 30%, transparent 70%);
+      animation: flasher 0.8s ease-in-out infinite alternate;
+    }
+    .scene-road .flash-light.blue {
+      left: calc(50% + 70px);
+      background: radial-gradient(circle, #3b82f6 30%, transparent 70%);
+      animation-delay: 0.4s;
+    }
+    @keyframes flasher {
+      0% { opacity: 0.2; transform: translateX(-50%) scale(0.9); }
+      100% { opacity: 1; transform: translateX(-50%) scale(1.1); }
+    }
+
+    /* Scene C — Medical/Triage */
+    .scene-medical {
+      background: linear-gradient(180deg, #0c4a6e 0%, #075985 40%, #0369a1 100%);
+    }
+    .scene-medical .heartbeat-container {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 260px;
+      height: 50px;
+    }
+    .scene-medical .triage-cross {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      animation: triagePulse 2s ease-in-out infinite;
+    }
+    @keyframes triagePulse {
+      0%, 100% { transform: translateX(-50%) scale(1) rotate(0deg); opacity: 1; }
+      50% { transform: translateX(-50%) scale(1.1) rotate(5deg); opacity: 0.8; }
+    }
+    .scene-medical .ecg-line {
+      position: absolute;
+      bottom: 20px;
+      left: 0;
+      width: 200%;
+      height: 40px;
+      animation: ecgScroll 2.5s linear infinite;
+    }
+    @keyframes ecgScroll {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+
+    /* ── Record card ── */
+    #record-card {
+      text-align: center;
+      transition: box-shadow 0.3s, border-color 0.3s;
+    }
+    #record-card.recording-active {
+      border-color: var(--danger);
+      box-shadow: 0 0 0 3px rgba(239,68,68,0.15), 0 2px 16px rgba(79,70,229,0.07);
+      animation: recordingPulse 1.5s ease-in-out infinite;
+    }
+    @keyframes recordingPulse {
+      0%, 100% { box-shadow: 0 0 0 3px rgba(239,68,68,0.15), 0 2px 16px rgba(79,70,229,0.07); }
+      50% { box-shadow: 0 0 0 6px rgba(239,68,68,0.25), 0 2px 20px rgba(239,68,68,0.1); }
+    }
 
     #timer-ring {
       position: relative;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      width: 120px;
-      height: 120px;
-      margin-bottom: 16px;
+      width: 130px;
+      height: 130px;
+      margin-bottom: 18px;
     }
     #timer-svg { position: absolute; top: 0; left: 0; transform: rotate(-90deg); }
     #timer-circle {
       fill: none;
       stroke: var(--accent);
-      stroke-width: 4;
+      stroke-width: 5;
       stroke-linecap: round;
-      stroke-dasharray: 339.29; /* 2π×54 */
+      stroke-dasharray: 339.29;
       stroke-dashoffset: 0;
       transition: stroke 0.3s;
     }
-    #timer-circle.pressure { stroke: var(--red-timer); }
+    #timer-circle.pressure { stroke: var(--danger); }
     #timer-display {
-      font-size: 2rem;
+      font-size: 2.1rem;
       font-weight: 700;
       font-variant-numeric: tabular-nums;
       letter-spacing: -0.02em;
+      color: var(--text);
     }
     #timer-display.over { color: var(--danger); }
 
+    .timer-pulse-icon {
+      display: none;
+      font-size: 1rem;
+      animation: heartPulse 0.8s ease-in-out infinite;
+      margin-left: 4px;
+    }
+    .timer-pulse-icon.visible { display: inline; }
+    @keyframes heartPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.3); }
+    }
+
     #record-btn {
       width: 100%;
-      padding: 14px;
-      border-radius: 8px;
+      padding: 16px;
+      border-radius: 14px;
       border: none;
-      font-size: 1rem;
-      font-weight: 600;
+      font-size: 1.05rem;
+      font-weight: 700;
       cursor: pointer;
-      background: var(--accent);
-      color: #0d1117;
-      transition: background 0.2s, opacity 0.2s;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+      color: #fff;
+      transition: all 0.2s;
+      box-shadow: 0 4px 14px rgba(79,70,229,0.35);
+      font-family: inherit;
     }
-    #record-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-    #record-btn.recording { background: var(--danger); color: #fff; }
+    #record-btn:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(79,70,229,0.4); }
+    #record-btn:active { transform: translateY(0); }
+    #record-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+    #record-btn.recording {
+      background: linear-gradient(135deg, var(--danger) 0%, #dc2626 100%);
+      box-shadow: 0 4px 14px rgba(239,68,68,0.4);
+    }
 
     #interim-text {
-      min-height: 48px;
+      min-height: 52px;
       margin-top: 14px;
       font-size: 0.85rem;
       color: var(--muted);
-      line-height: 1.5;
+      line-height: 1.6;
       text-align: left;
       font-style: italic;
+      background: var(--bg);
+      border-radius: 10px;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
     }
 
     #low-confidence-warning {
-      margin-top: 8px;
-      font-size: 0.75rem;
-      color: var(--warn);
+      margin-top: 10px;
+      font-size: 0.78rem;
+      color: #92400e;
+      background: #fffbeb;
+      border: 1px solid var(--warn);
+      border-radius: 8px;
+      padding: 8px 12px;
       text-align: left;
     }
 
     /* Text fallback */
-    #text-fallback { display: none; }
+    #text-fallback { display: none; margin-top: 14px; }
+    #text-fallback p {
+      font-size: 0.8rem;
+      color: #92400e;
+      background: #fffbeb;
+      border: 1px solid var(--warn);
+      border-radius: 8px;
+      padding: 8px 12px;
+      margin-bottom: 10px;
+    }
     #text-fallback textarea {
       width: 100%;
       background: var(--bg);
-      border: 1px solid var(--border);
+      border: 1.5px solid var(--border);
       color: var(--text);
-      padding: 10px 12px;
-      border-radius: 6px;
+      padding: 10px 14px;
+      border-radius: 10px;
       font-size: 0.85rem;
-      min-height: 80px;
+      min-height: 90px;
       resize: vertical;
       font-family: inherit;
       margin-bottom: 10px;
     }
     #text-fallback textarea:focus { outline: none; border-color: var(--accent); }
 
-    /* Error banner */
+    /* ── Error banner ── */
     #error-banner {
-      background: #2d1217;
-      border: 1px solid var(--danger);
-      border-radius: 8px;
-      padding: 10px 14px;
-      font-size: 0.82rem;
-      color: var(--danger);
+      background: #fff1f2;
+      border: 1.5px solid var(--danger);
+      border-radius: 12px;
+      padding: 12px 16px;
+      font-size: 0.84rem;
+      color: #991b1b;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -268,21 +542,23 @@
     }
     #error-banner button {
       background: none;
-      border: 1px solid var(--danger);
+      border: 1.5px solid var(--danger);
       color: var(--danger);
-      padding: 4px 10px;
-      border-radius: 5px;
-      font-size: 0.78rem;
+      padding: 5px 12px;
+      border-radius: 8px;
+      font-size: 0.8rem;
       cursor: pointer;
       white-space: nowrap;
+      font-family: inherit;
+      font-weight: 600;
     }
 
-    /* Loading */
+    /* ── Loading ── */
     #loading-card { text-align: center; color: var(--muted); font-size: 0.9rem; }
     .spinner {
       display: inline-block;
       width: 20px; height: 20px;
-      border: 2px solid var(--border);
+      border: 2.5px solid var(--border);
       border-top-color: var(--accent);
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
@@ -291,268 +567,463 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* Results */
-    #results-card h2 { font-size: 0.85rem; color: var(--muted); margin-bottom: 16px; letter-spacing: 0.06em; text-transform: uppercase; }
+    /* ── Results ── */
+    #results-card h2 {
+      font-size: 1rem;
+      color: var(--text);
+      margin-bottom: 18px;
+      font-weight: 700;
+    }
 
     .score-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 10px;
-      margin-bottom: 16px;
+      margin-bottom: 18px;
     }
     .score-box {
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 12px;
+      border-radius: 12px;
+      padding: 14px;
+      border: 1.5px solid transparent;
     }
-    .score-box .label { font-size: 0.7rem; color: var(--muted); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
-    .score-box .value { font-size: 1.4rem; font-weight: 700; }
-    .score-box .value.good { color: var(--success); }
-    .score-box .value.bad { color: var(--danger); }
-    .score-box .value.warn { color: var(--warn); }
+    .score-box.good {
+      background: #d1fae5;
+      border-color: #6ee7b7;
+    }
+    .score-box.warn {
+      background: #fef3c7;
+      border-color: #fcd34d;
+    }
+    .score-box.bad {
+      background: #fee2e2;
+      border-color: #fca5a5;
+    }
+    .score-box .label {
+      font-size: 0.7rem;
+      color: #374151;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-weight: 600;
+      opacity: 0.75;
+    }
+    .score-box .value {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--text);
+    }
 
-    .section-label { font-size: 0.75rem; color: var(--muted); margin: 14px 0 6px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .section-label {
+      font-size: 0.72rem;
+      color: var(--muted);
+      margin: 16px 0 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 600;
+    }
 
     .gaps-list { list-style: none; display: flex; flex-direction: column; gap: 5px; }
     .gaps-list li {
-      font-size: 0.82rem;
-      padding: 6px 10px;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 5px;
-      color: var(--muted);
+      font-size: 0.83rem;
+      padding: 8px 12px;
+      background: #fef3c7;
+      border: 1px solid #fcd34d;
+      border-radius: 8px;
+      color: #78350f;
     }
-    .gaps-list li::before { content: "→ "; color: var(--warn); }
+    .gaps-list li::before { content: "→ "; color: var(--warn); font-weight: 700; }
 
     .model-answer {
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-left: 3px solid var(--accent);
-      border-radius: 6px;
-      padding: 12px;
+      background: #eef2ff;
+      border: 1.5px solid #c7d2fe;
+      border-left: 4px solid var(--accent);
+      border-radius: 10px;
+      padding: 14px;
       font-size: 0.85rem;
-      line-height: 1.6;
+      line-height: 1.7;
       white-space: pre-wrap;
       color: var(--text);
     }
 
     #try-again-btn {
       width: 100%;
-      padding: 12px;
-      border-radius: 8px;
-      border: 1px solid var(--border);
+      padding: 13px;
+      border-radius: 12px;
+      border: 2px solid var(--accent);
       background: none;
-      color: var(--text);
-      font-size: 0.9rem;
+      color: var(--accent);
+      font-size: 0.95rem;
+      font-weight: 700;
       cursor: pointer;
-      margin-top: 16px;
+      margin-top: 18px;
+      transition: all 0.2s;
+      font-family: inherit;
     }
-    #try-again-btn:hover { border-color: var(--accent); color: var(--accent); }
+    #try-again-btn:hover {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(79,70,229,0.3);
+    }
 
     .hidden { display: none !important; }
 
     button.primary {
-      background: var(--accent);
-      color: #0d1117;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+      color: #fff;
       border: none;
-      padding: 10px 20px;
-      border-radius: 6px;
-      font-size: 0.9rem;
-      font-weight: 600;
+      padding: 12px 20px;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      font-weight: 700;
       cursor: pointer;
       width: 100%;
+      font-family: inherit;
+      box-shadow: 0 4px 14px rgba(79,70,229,0.3);
+      transition: opacity 0.2s;
     }
-    button.primary:hover { opacity: 0.88; }
+    button.primary:hover { opacity: 0.9; }
   </style>
 </head>
 <body>
 
 <!-- iOS Safari warning (shown only on iOS Safari) -->
 <div id="ios-warning" class="hidden">
-  For best results on iPhone, use <strong>Chrome</strong>. Safari may cut off mid-recording.
+  在 iPhone 上建議使用 <strong>Chrome</strong> 瀏覽器，Safari 可能會中斷錄音。
 </div>
 
 <!-- Settings overlay -->
 <div id="settings-overlay">
   <div class="settings-box">
-    <h2>⚙️ Settings</h2>
-    <label for="api-key-input">Anthropic API Key</label>
+    <h2>⚙️ 設定</h2>
+    <label for="api-key-input">Anthropic API 金鑰（AI 評分）</label>
     <input type="password" id="api-key-input" placeholder="sk-ant-..." autocomplete="off" spellcheck="false">
     <p class="settings-hint">
-      Key is stored only in this browser. Never sent to any server.<br>
-      Get a key at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>.
+      請至 <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> 取得金鑰。
     </p>
-    <button class="primary" id="save-key-btn">Save & Start</button>
+    <label for="groq-key-input">Groq API 金鑰（語音辨識）</label>
+    <input type="password" id="groq-key-input" placeholder="gsk_..." autocomplete="off" spellcheck="false">
+    <p class="settings-hint">
+      免費使用，請至 <a href="https://console.groq.com" target="_blank">console.groq.com</a> 取得金鑰。<br>
+      金鑰僅儲存於本裝置，不會傳送至任何其他伺服器。
+    </p>
+    <div class="settings-noise-row">
+      <input type="checkbox" id="noise-toggle" checked>
+      <label for="noise-toggle">啟用背景雜音（增加沉浸感）</label>
+    </div>
+    <button class="primary" id="save-key-btn">儲存並開始</button>
   </div>
 </div>
 
 <header>
   <div>
-    <h1>MIST TRAINER</h1>
-    <p class="subtitle">Mechanism · Injuries · Signs · Treatment</p>
+    <h1>MIST 戰傷報告訓練</h1>
+    <p class="subtitle">致傷機轉 · 受傷情況 · 生命徵象 · 已施處置</p>
   </div>
-  <button id="gear-btn" title="Settings">⚙</button>
+  <button id="gear-btn" title="設定">⚙</button>
 </header>
 
 <main>
 
-  <!-- Scenario picker -->
-  <div class="card">
-    <div id="scenario-label">SELECT SCENARIO</div>
-    <select id="scenario-select"></select>
+  <!-- Scene panel (animated SVG) -->
+  <div id="scene-panel"></div>
+
+  <!-- Scenario picker card -->
+  <div class="card" id="scenario-card">
+    <div class="scenario-section-label">選擇情境</div>
+    <span class="scenario-emoji" id="scenario-emoji">🎯</span>
+    <div id="scenario-title">載入情境中…</div>
     <div class="scenario-meta">
       <span class="badge" id="badge-difficulty"></span>
-      <span class="badge" id="badge-time"></span>
+      <span class="badge time" id="badge-time"></span>
     </div>
+    <button id="random-btn">🎲 換一個情境</button>
     <div id="mist-guide">
-      <div class="mist-letter"><span>M</span>mechanism · distance</div>
-      <div class="mist-letter"><span>I</span>injuries sustained</div>
-      <div class="mist-letter"><span>S</span>vitals · signs</div>
-      <div class="mist-letter"><span>T</span>treatment · times</div>
+      <div class="mist-letter"><span>M</span>致傷機轉</div>
+      <div class="mist-letter"><span>I</span>受傷情況</div>
+      <div class="mist-letter"><span>S</span>生命徵象</div>
+      <div class="mist-letter"><span>T</span>已施處置</div>
     </div>
   </div>
 
   <!-- Record -->
   <div class="card" id="record-card">
     <div id="timer-ring">
-      <svg id="timer-svg" width="120" height="120" viewBox="0 0 120 120">
-        <circle cx="60" cy="60" r="54" fill="none" stroke="#30363d" stroke-width="4"/>
-        <circle id="timer-circle" cx="60" cy="60" r="54"/>
+      <svg id="timer-svg" width="130" height="130" viewBox="0 0 130 130">
+        <circle cx="65" cy="65" r="54" fill="none" stroke="#d0d8f0" stroke-width="5"/>
+        <circle id="timer-circle" cx="65" cy="65" r="54"/>
       </svg>
-      <div id="timer-display">—</div>
+      <div>
+        <span id="timer-display">—</span><span class="timer-pulse-icon" id="pulse-icon">💓</span>
+      </div>
     </div>
 
-    <button id="record-btn">⏺ Record</button>
+    <button id="record-btn">⏺ 開始錄音</button>
     <div id="interim-text"></div>
-    <div id="low-confidence-warning" hidden>⚠ Low confidence — review transcript before submitting</div>
+    <div id="low-confidence-warning" hidden>⚠ 辨識信心偏低，請確認文字後再送出</div>
 
     <!-- Text fallback (shown on STT network error) -->
     <div id="text-fallback">
-      <p style="font-size:0.8rem;color:var(--warn);margin-bottom:8px;">
-        ⚠ Speech recognition unavailable — type or paste your transcript:
-      </p>
-      <textarea id="fallback-textarea" placeholder="Type your MIST report here..."></textarea>
-      <button class="primary" id="submit-text-btn">Evaluate</button>
+      <p>⚠ 語音辨識無法使用，請直接輸入報告內容：</p>
+      <textarea id="fallback-textarea" placeholder="在此輸入 MIST 報告..."></textarea>
+      <button class="primary" id="submit-text-btn">送出評估</button>
     </div>
   </div>
 
   <!-- Error banner (hidden by default) -->
   <div id="error-banner" class="hidden">
     <span id="error-msg"></span>
-    <button id="retry-btn">Try again</button>
+    <button id="retry-btn">再試一次</button>
   </div>
 
   <!-- Loading -->
   <div class="card hidden" id="loading-card">
-    <span class="spinner"></span> Evaluating…
+    <span class="spinner"></span> AI 評估中…
   </div>
 
   <!-- Results -->
   <div class="card hidden" id="results-card">
-    <h2>Results</h2>
+    <h2>🏆 訓練結果</h2>
     <div class="score-grid">
-      <div class="score-box">
-        <div class="label">Completeness</div>
+      <div class="score-box" id="box-completeness">
+        <div class="label">完整度</div>
         <div class="value" id="r-completeness"></div>
       </div>
-      <div class="score-box">
-        <div class="label">Precision</div>
+      <div class="score-box" id="box-precision">
+        <div class="label">精確度</div>
         <div class="value" id="r-precision"></div>
       </div>
-      <div class="score-box">
-        <div class="label">Fluency</div>
+      <div class="score-box" id="box-fluency">
+        <div class="label">流暢度</div>
         <div class="value" id="r-fluency"></div>
       </div>
-      <div class="score-box">
-        <div class="label">Structure</div>
+      <div class="score-box" id="box-structure">
+        <div class="label">報告順序</div>
         <div class="value" id="r-structure"></div>
       </div>
     </div>
 
     <div id="hedges-section" class="hidden">
-      <div class="section-label">Vague language flagged</div>
+      <div class="section-label">模糊用語提示</div>
       <ul class="gaps-list" id="r-hedges"></ul>
     </div>
 
     <div id="gaps-section" class="hidden">
-      <div class="section-label">Gaps</div>
+      <div class="section-label">遺漏項目</div>
       <ul class="gaps-list" id="r-gaps"></ul>
     </div>
 
-    <div class="section-label">Model answer</div>
+    <div class="section-label">標準答案</div>
     <div class="model-answer" id="r-model-answer"></div>
 
-    <button id="try-again-btn">↩ Try again</button>
+    <button id="try-again-btn">↩ 再練一次</button>
   </div>
 
 </main>
 
+<!-- speech.js note: set recognition.lang = "zh-TW" in speech.js -->
 <script src="scenarios.js"></script>
 <script src="evaluator.js"></script>
 <script src="speech.js"></script>
 <script>
-// ── iOS Safari detection ──────────────────────────────────────────────────
+// ── iOS Safari detection ───────────────────────────────────────────────────
 const isIosSafari = /iP(hone|ad|od)/.test(navigator.userAgent) &&
   /WebKit/.test(navigator.userAgent) &&
   !/CriOS/.test(navigator.userAgent) &&
   !/FxiOS/.test(navigator.userAgent);
 if (isIosSafari) document.getElementById("ios-warning").classList.remove("hidden");
 
-// ── API key (localStorage) ────────────────────────────────────────────────
+// ── API keys (localStorage) ────────────────────────────────────────────────
 const KEY_STORAGE = "mist_api_key";
+const GROQ_KEY_STORAGE = "mist_groq_key";
 let apiKey = localStorage.getItem(KEY_STORAGE) || "";
+let groqKey = localStorage.getItem(GROQ_KEY_STORAGE) || "";
 
 const settingsOverlay = document.getElementById("settings-overlay");
 const apiKeyInput = document.getElementById("api-key-input");
+const groqKeyInput = document.getElementById("groq-key-input");
 
 function openSettings() {
   apiKeyInput.value = apiKey;
+  groqKeyInput.value = groqKey;
   settingsOverlay.classList.remove("hidden");
 }
 function closeSettings() { settingsOverlay.classList.add("hidden"); }
 
-if (!apiKey) openSettings();
+if (!apiKey || !groqKey) openSettings();
 
 document.getElementById("gear-btn").addEventListener("click", openSettings);
 document.getElementById("save-key-btn").addEventListener("click", () => {
   const k = apiKeyInput.value.trim();
-  if (!k.startsWith("sk-")) { apiKeyInput.style.borderColor = "var(--danger)"; return; }
-  apiKeyInput.style.borderColor = "";
+  const gk = groqKeyInput.value.trim();
+  let hasError = false;
+  if (!k.startsWith("sk-")) {
+    apiKeyInput.style.borderColor = "var(--danger)";
+    hasError = true;
+  } else {
+    apiKeyInput.style.borderColor = "";
+  }
+  if (!gk.startsWith("gsk_")) {
+    groqKeyInput.style.borderColor = "var(--danger)";
+    hasError = true;
+  } else {
+    groqKeyInput.style.borderColor = "";
+  }
+  if (hasError) return;
   apiKey = k;
+  groqKey = gk;
   localStorage.setItem(KEY_STORAGE, k);
+  localStorage.setItem(GROQ_KEY_STORAGE, gk);
   closeSettings();
 });
 
-// ── Scenario picker ───────────────────────────────────────────────────────
-const sel = document.getElementById("scenario-select");
-const badgeDiff = document.getElementById("badge-difficulty");
-const badgeTime = document.getElementById("badge-time");
+// ── Scenario management (random, no dropdown) ─────────────────────────────
+let currentScenarioIndex = -1;
 
-SCENARIOS.forEach((sc, i) => {
-  const opt = document.createElement("option");
-  opt.value = i;
-  opt.textContent = sc.title;
-  sel.appendChild(opt);
-});
+function pickRandomScenario(excludeIndex) {
+  if (SCENARIOS.length <= 1) return 0;
+  let idx;
+  do { idx = Math.floor(Math.random() * SCENARIOS.length); } while (idx === excludeIndex);
+  return idx;
+}
 
-function currentScenario() { return SCENARIOS[+sel.value]; }
+function currentScenario() { return SCENARIOS[currentScenarioIndex]; }
 
-function updateScenarioMeta() {
-  const sc = currentScenario();
-  badgeDiff.textContent = sc.difficulty;
-  badgeDiff.className = "badge" + (sc.difficulty === "pressure" ? " pressure" : "");
-  badgeTime.textContent = `${sc.timeLimitSec}s limit`;
+function detectSceneType(scenario) {
+  const title = (scenario.title || "").toLowerCase();
+  const medKeywords = ["cardiac", "chemical", "medical", "triage", "poison", "心臟", "化學", "醫療"];
+  const roadKeywords = ["mva", "vehicle", "fall", "evacuation", "accident", "collision", "車", "墜", "疏散"];
+  if (medKeywords.some(k => title.includes(k))) return "medical";
+  if (roadKeywords.some(k => title.includes(k))) return "road";
+  return "urban";
+}
+
+function buildScenePanel(scenario) {
+  const panel = document.getElementById("scene-panel");
+  const type = detectSceneType(scenario);
+
+  if (type === "urban") {
+    panel.innerHTML = `
+      <div class="scene-urban" style="width:100%;height:100%;position:relative;overflow:hidden;">
+        <div class="smoke"></div><div class="smoke"></div><div class="smoke"></div>
+        <svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;bottom:0;left:0;width:100%;height:80px;" viewBox="0 0 640 80" preserveAspectRatio="none">
+          <rect x="0" y="40" width="80" height="40" fill="#0f3460"/>
+          <rect x="10" y="20" width="60" height="20" fill="#16213e"/>
+          <rect x="100" y="25" width="100" height="55" fill="#0f3460"/>
+          <rect x="110" y="10" width="80" height="15" fill="#16213e"/>
+          <rect x="220" y="30" width="70" height="50" fill="#0f3460"/>
+          <rect x="310" y="20" width="90" height="60" fill="#16213e"/>
+          <rect x="320" y="5" width="70" height="15" fill="#0f3460"/>
+          <rect x="420" y="35" width="80" height="45" fill="#0f3460"/>
+          <rect x="520" y="25" width="100" height="55" fill="#16213e"/>
+          <rect x="530" y="10" width="80" height="15" fill="#0f3460"/>
+          <!-- windows -->
+          <rect x="15" y="25" width="10" height="8" fill="#f59e0b" opacity="0.7"/>
+          <rect x="115" y="15" width="10" height="8" fill="#f59e0b" opacity="0.5"/>
+          <rect x="320" y="12" width="10" height="8" fill="#f59e0b" opacity="0.8"/>
+          <rect x="430" y="40" width="10" height="8" fill="#f59e0b" opacity="0.6"/>
+          <!-- ground -->
+          <rect x="0" y="72" width="640" height="8" fill="#0a0a1a"/>
+        </svg>
+        <div class="cross-marker">
+          <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+            <rect x="15" y="5" width="10" height="30" rx="2" fill="#ef4444"/>
+            <rect x="5" y="15" width="30" height="10" rx="2" fill="#ef4444"/>
+          </svg>
+        </div>
+      </div>`;
+  } else if (type === "road") {
+    panel.innerHTML = `
+      <div class="scene-road" style="width:100%;height:100%;position:relative;overflow:hidden;">
+        <div class="flash-light"></div>
+        <div class="flash-light blue"></div>
+        <svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;bottom:0;left:0;width:100%;height:90px;" viewBox="0 0 640 90" preserveAspectRatio="none">
+          <!-- road -->
+          <rect x="0" y="50" width="640" height="40" fill="#374151"/>
+          <!-- lane markings -->
+          <rect x="60" y="68" width="60" height="5" fill="#fbbf24" opacity="0.7"/>
+          <rect x="180" y="68" width="60" height="5" fill="#fbbf24" opacity="0.7"/>
+          <rect x="300" y="68" width="60" height="5" fill="#fbbf24" opacity="0.7"/>
+          <rect x="420" y="68" width="60" height="5" fill="#fbbf24" opacity="0.7"/>
+          <rect x="540" y="68" width="60" height="5" fill="#fbbf24" opacity="0.7"/>
+          <!-- vehicle silhouette -->
+          <rect x="230" y="35" width="120" height="25" rx="8" fill="#1e293b"/>
+          <rect x="240" y="28" width="80" height="15" rx="4" fill="#1e293b"/>
+          <circle cx="260" cy="62" r="10" fill="#0f172a"/>
+          <circle cx="320" cy="62" r="10" fill="#0f172a"/>
+          <circle cx="260" cy="62" r="5" fill="#374151"/>
+          <circle cx="320" cy="62" r="5" fill="#374151"/>
+          <!-- ambulance -->
+          <rect x="420" y="30" width="100" height="28" rx="6" fill="#ef4444"/>
+          <rect x="430" y="22" width="60" height="16" rx="4" fill="#ef4444"/>
+          <rect x="455" y="26" width="10" height="8" fill="white" opacity="0.9"/>
+          <rect x="458" y="23" width="4" height="14" fill="white" opacity="0.9"/>
+          <circle cx="445" cy="60" r="9" fill="#0f172a"/>
+          <circle cx="495" cy="60" r="9" fill="#0f172a"/>
+          <circle cx="445" cy="60" r="4" fill="#374151"/>
+          <circle cx="495" cy="60" r="4" fill="#374151"/>
+        </svg>
+      </div>`;
+  } else {
+    // medical / triage
+    panel.innerHTML = `
+      <div class="scene-medical" style="width:100%;height:100%;position:relative;overflow:hidden;">
+        <div class="triage-cross">
+          <svg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+            <rect x="22" y="5" width="16" height="50" rx="4" fill="white" opacity="0.9"/>
+            <rect x="5" y="22" width="50" height="16" rx="4" fill="white" opacity="0.9"/>
+          </svg>
+        </div>
+        <div class="heartbeat-container">
+          <svg class="ecg-line" viewBox="0 0 400 50" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+            <polyline points="0,25 40,25 55,25 60,5 65,45 70,25 110,25 150,25 165,25 170,5 175,45 180,25 220,25 260,25 275,25 280,5 285,45 290,25 330,25 370,25 385,25 390,5 395,45 400,25" fill="none" stroke="#34d399" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;bottom:0;left:0;width:100%;height:50px;" viewBox="0 0 640 50" preserveAspectRatio="none">
+          <rect x="0" y="30" width="640" height="20" fill="#023e6e" opacity="0.5"/>
+          <!-- bed silhouettes -->
+          <rect x="50" y="10" width="80" height="22" rx="4" fill="#0284c7" opacity="0.6"/>
+          <rect x="55" y="5" width="20" height="12" rx="6" fill="#0369a1" opacity="0.7"/>
+          <rect x="220" y="10" width="80" height="22" rx="4" fill="#0284c7" opacity="0.6"/>
+          <rect x="225" y="5" width="20" height="12" rx="6" fill="#0369a1" opacity="0.7"/>
+          <rect x="400" y="10" width="80" height="22" rx="4" fill="#0284c7" opacity="0.6"/>
+          <rect x="405" y="5" width="20" height="12" rx="6" fill="#0369a1" opacity="0.7"/>
+        </svg>
+      </div>`;
+  }
+}
+
+function setScenario(index) {
+  currentScenarioIndex = index;
+  const sc = SCENARIOS[index];
+  const isPressure = sc.difficulty === "pressure";
+  const scenarioCard = document.getElementById("scenario-card");
+
+  document.getElementById("scenario-title").textContent = sc.title;
+  document.getElementById("scenario-emoji").textContent = isPressure ? "🚨" : "🎯";
+  scenarioCard.className = "card" + (isPressure ? " pressure-mode" : "");
+
+  const badgeDiff = document.getElementById("badge-difficulty");
+  badgeDiff.textContent = isPressure ? "高壓模式" : "標準模式";
+  badgeDiff.className = "badge" + (isPressure ? " pressure" : "");
+
+  document.getElementById("badge-time").textContent = `${sc.timeLimitSec}秒限制`;
+
+  buildScenePanel(sc);
   resetUI();
 }
 
-sel.addEventListener("change", updateScenarioMeta);
-updateScenarioMeta();
+// Initial random pick
+setScenario(pickRandomScenario(-1));
+
+document.getElementById("random-btn").addEventListener("click", () => {
+  setScenario(pickRandomScenario(currentScenarioIndex));
+});
 
 // ── Timer ─────────────────────────────────────────────────────────────────
 const CIRCUMFERENCE = 339.29; // 2π × 54
 const timerDisplay = document.getElementById("timer-display");
 const timerCircle = document.getElementById("timer-circle");
+const pulseIcon = document.getElementById("pulse-icon");
 
 function updateTimer({ elapsed, limit }) {
   const remaining = Math.max(0, limit - elapsed);
@@ -572,14 +1043,52 @@ function resetTimer() {
   timerDisplay.classList.remove("over");
   timerCircle.style.strokeDashoffset = "0";
   timerCircle.classList.remove("pressure");
+  pulseIcon.classList.remove("visible");
+}
+
+// ── Distraction system (Web Audio API) ────────────────────────────────────
+let distractionCtx = null;
+let distractionTimer = null;
+
+function createDistraction() {
+  const ctx = new AudioContext();
+  const bufferSize = Math.floor(ctx.sampleRate * 0.3);
+  const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * 0.15;
+  const source = ctx.createBufferSource();
+  source.buffer = buffer;
+  source.connect(ctx.destination);
+  source.start();
+  return ctx;
+}
+
+function startDistractions() {
+  const noiseEnabled = document.getElementById("noise-toggle").checked;
+  if (!noiseEnabled) return;
+  function burst() {
+    try {
+      if (distractionCtx) { try { distractionCtx.close(); } catch(e){} }
+      distractionCtx = createDistraction();
+    } catch(e) {}
+    const delay = 8000 + Math.random() * 7000; // 8–15s
+    distractionTimer = setTimeout(burst, delay);
+  }
+  distractionTimer = setTimeout(burst, 1500 + Math.random() * 3000);
+}
+
+function stopDistractions() {
+  if (distractionTimer) { clearTimeout(distractionTimer); distractionTimer = null; }
+  if (distractionCtx) { try { distractionCtx.close(); } catch(e){} distractionCtx = null; }
 }
 
 // ── Record button ─────────────────────────────────────────────────────────
+const recordCard = document.getElementById("record-card");
 const recordBtn = document.getElementById("record-btn");
 let isRecording = false;
 
 recordBtn.addEventListener("click", () => {
-  if (!apiKey) { openSettings(); return; }
+  if (!apiKey || !groqKey) { openSettings(); return; }
   if (isRecording) {
     Speech.stop();
     return;
@@ -593,56 +1102,68 @@ function startRecording() {
     return;
   }
   isRecording = true;
-  recordBtn.textContent = "⏹ Stop";
+  recordBtn.textContent = "⏹ 停止錄音";
   recordBtn.classList.add("recording");
+  recordCard.classList.add("recording-active");
+  pulseIcon.classList.add("visible");
   document.getElementById("results-card").classList.add("hidden");
   document.getElementById("error-banner").classList.add("hidden");
   document.getElementById("interim-text").textContent = "";
   document.getElementById("low-confidence-warning").hidden = true;
 
+  startDistractions();
+
   const sc = currentScenario();
   Speech.start({
     limit: sc.timeLimitSec,
     onTick: updateTimer,
+    groqKey: groqKey,
     onFinal: ({ transcript, durationSec }) => {
       isRecording = false;
-      recordBtn.textContent = "⏺ Record";
+      recordBtn.textContent = "⏺ 開始錄音";
       recordBtn.classList.remove("recording");
+      recordCard.classList.remove("recording-active");
+      pulseIcon.classList.remove("visible");
+      stopDistractions();
       runEvaluation(transcript, durationSec, sc);
     },
     onErr: handleSpeechError
   });
 }
 
-// ── Speech errors ─────────────────────────────────────────────────────────
+// ── Speech errors ──────────────────────────────────────────────────────────
 const errorBanner = document.getElementById("error-banner");
 const errorMsg = document.getElementById("error-msg");
 const retryBtn = document.getElementById("retry-btn");
 
 function handleSpeechError(type) {
   isRecording = false;
-  recordBtn.textContent = "⏺ Record";
+  recordBtn.textContent = "⏺ 開始錄音";
   recordBtn.classList.remove("recording");
+  recordCard.classList.remove("recording-active");
+  pulseIcon.classList.remove("visible");
+  stopDistractions();
   resetTimer();
 
   const messages = {
-    "mic-denied": "Microphone access required. Allow mic in browser settings, then try again.",
-    "no-speech":  "No speech detected — tap Record and start speaking.",
-    "network":    null, // show text fallback instead
-    "unknown":    "Speech recognition error. Try again."
+    "mic-denied":        "需要麥克風權限。請在瀏覽器設定中允許麥克風，然後重試。",
+    "no-speech":         "未偵測到語音，請點擊錄音後開始說話。",
+    "groq-invalid-key":  "Groq API 金鑰無效，請在設定中更新。",
+    "unknown":           "語音辨識錯誤，請重試。"
   };
 
   if (type === "network") { showTextFallback(); return; }
+  if (type === "groq-invalid-key") { openSettings(); return; }
 
-  errorMsg.textContent = messages[type] || "Speech error. Try again.";
-  retryBtn.textContent = "Try again";
+  errorMsg.textContent = messages[type] || "語音辨識錯誤，請重試。";
+  retryBtn.textContent = "再試一次";
   retryBtn.onclick = startRecording;
   errorBanner.classList.remove("hidden");
 }
 
 retryBtn.addEventListener("click", () => errorBanner.classList.add("hidden"));
 
-// ── Text fallback ─────────────────────────────────────────────────────────
+// ── Text fallback ──────────────────────────────────────────────────────────
 function showTextFallback() {
   document.getElementById("text-fallback").style.display = "block";
   document.getElementById("record-btn").style.display = "none";
@@ -654,7 +1175,7 @@ document.getElementById("submit-text-btn").addEventListener("click", () => {
   runEvaluation(text, currentScenario().timeLimitSec, currentScenario());
 });
 
-// ── Evaluation ────────────────────────────────────────────────────────────
+// ── Evaluation ─────────────────────────────────────────────────────────────
 const loadingCard = document.getElementById("loading-card");
 const resultsCard = document.getElementById("results-card");
 
@@ -675,11 +1196,11 @@ async function runEvaluation(transcript, durationSec, scenario) {
       return;
     }
     if (result.error === "timeout") {
-      showEvalError("Evaluation timed out — try again.", startRecording);
+      showEvalError("評估逾時，請重試。", startRecording);
       return;
     }
     if (result.error) {
-      showEvalError("Evaluation failed — try again.", startRecording);
+      showEvalError("評估失敗，請重試。", startRecording);
       return;
     }
 
@@ -687,18 +1208,18 @@ async function runEvaluation(transcript, durationSec, scenario) {
   } catch (err) {
     loadingCard.classList.add("hidden");
     recordBtn.disabled = false;
-    showEvalError("Unexpected error — try again.", startRecording);
+    showEvalError("發生未預期錯誤，請重試。", startRecording);
   }
 }
 
 function showEvalError(msg, onRetry) {
   errorMsg.textContent = msg;
-  retryBtn.textContent = "Try again";
+  retryBtn.textContent = "再試一次";
   retryBtn.onclick = onRetry;
   errorBanner.classList.remove("hidden");
 }
 
-// ── Results rendering ─────────────────────────────────────────────────────
+// ── Results rendering ──────────────────────────────────────────────────────
 function pct(n) { return Math.round(n * 100) + "%"; }
 
 function scoreClass(n) {
@@ -707,33 +1228,27 @@ function scoreClass(n) {
   return "bad";
 }
 
+function applyScoreBox(boxId, valueId, value, displayText) {
+  const cls = typeof value === "number" ? scoreClass(value) : "warn";
+  document.getElementById(boxId).className = "score-box " + cls;
+  const el = document.getElementById(valueId);
+  el.textContent = displayText;
+}
+
 function showResults(result, durationSec, scenario) {
   const { scores, hedges, gaps, modelAnswer } = result;
 
-  // Completeness
-  const rc = document.getElementById("r-completeness");
-  rc.textContent = pct(scores.completeness);
-  rc.className = "value " + scoreClass(scores.completeness);
+  applyScoreBox("box-completeness", "r-completeness", scores.completeness, pct(scores.completeness));
+  applyScoreBox("box-precision", "r-precision", scores.precision, pct(scores.precision));
 
-  // Precision
-  const rp = document.getElementById("r-precision");
-  rp.textContent = pct(scores.precision);
-  rp.className = "value " + scoreClass(scores.precision);
-
-  // Fluency
-  const rf = document.getElementById("r-fluency");
   const { withinTime, durationSec: dur } = scores.fluency;
-  rf.textContent = withinTime
-    ? `${Math.round(dur)}s ✓`
-    : `${Math.round(dur)}s ✗`;
-  rf.className = "value " + (withinTime ? "good" : "bad");
+  const fluencyScore = withinTime ? 1 : 0;
+  applyScoreBox("box-fluency", "r-fluency", fluencyScore, withinTime ? `${Math.round(dur)}s ✓` : `${Math.round(dur)}s ✗`);
 
-  // Structure
-  const rs = document.getElementById("r-structure");
-  rs.textContent = scores.structure;
-  rs.className = "value " + (scores.structure === "MIST" ? "good" : scores.structure === "incomplete" ? "bad" : "warn");
+  const structureMap = { "MIST": 1, "incomplete": 0 };
+  const structureScore = structureMap[scores.structure] !== undefined ? structureMap[scores.structure] : 0.5;
+  applyScoreBox("box-structure", "r-structure", structureScore, scores.structure);
 
-  // Hedges
   const hedgesSection = document.getElementById("hedges-section");
   const hedgesList = document.getElementById("r-hedges");
   hedgesList.innerHTML = "";
@@ -744,7 +1259,6 @@ function showResults(result, durationSec, scenario) {
     hedgesSection.classList.add("hidden");
   }
 
-  // Gaps
   const gapsSection = document.getElementById("gaps-section");
   const gapsList = document.getElementById("r-gaps");
   gapsList.innerHTML = "";
@@ -755,15 +1269,16 @@ function showResults(result, durationSec, scenario) {
     gapsSection.classList.add("hidden");
   }
 
-  // Model answer
   document.getElementById("r-model-answer").textContent = modelAnswer || "";
 
   resultsCard.classList.remove("hidden");
   resultsCard.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
-// ── Try again ─────────────────────────────────────────────────────────────
-document.getElementById("try-again-btn").addEventListener("click", resetUI);
+// ── Try again ──────────────────────────────────────────────────────────────
+document.getElementById("try-again-btn").addEventListener("click", () => {
+  setScenario(pickRandomScenario(currentScenarioIndex));
+});
 
 function resetUI() {
   resultsCard.classList.add("hidden");
@@ -773,6 +1288,8 @@ function resetUI() {
   document.getElementById("record-btn").style.display = "";
   document.getElementById("interim-text").textContent = "";
   document.getElementById("low-confidence-warning").hidden = true;
+  recordCard.classList.remove("recording-active");
+  pulseIcon.classList.remove("visible");
   resetTimer();
   const sc = currentScenario();
   timerCircle.className = sc.difficulty === "pressure" ? "pressure" : "";

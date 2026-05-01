@@ -2,7 +2,7 @@
 // Claude returns facts (booleans + lists); JS computes derived scores.
 // Compatible with Node.js (18+) and browser.
 
-const PROMPT_VERSION = "v1.0";
+const PROMPT_VERSION = "v2.0";
 const MODEL = "claude-haiku-4-5-20251001";
 const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
 
@@ -15,13 +15,15 @@ const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
 //   modelAnswer: string    — complete correct MIST for this scenario
 // }
 
-const SYSTEM_PROMPT = `You are a MIST handoff evaluator for trauma medicine and military casualty care (TCCC).
+const SYSTEM_PROMPT = `你是一個戰傷急救（TCCC）MIST 傷患交接報告評估系統，服務對象為台灣戰時自訓團（zh-TW）的學員。
 
-MIST = Mechanism of injury | Injuries sustained | Signs & symptoms | Treatment given
+MIST = 傷害機轉（Mechanism of injury）| 受傷部位（Injuries sustained）| 生命徵象（Signs & symptoms）| 已給予處置（Treatment given）
 
-You will receive:
-1. A scenario object describing a patient
-2. A spoken transcript of the practitioner's MIST report
+你將收到：
+1. 一個描述傷患狀況的情境物件（scenario）
+2. 學員口述的 MIST 報告逐字稿（transcript）
+
+逐字稿可能是繁體中文、英文，或中英夾雜（醫療縮寫如 GCS、BP、SpO2 通常以英文呈現）。
 
 Return ONLY a JSON object with NO prose, NO markdown fences. Schema:
 
@@ -32,27 +34,27 @@ Return ONLY a JSON object with NO prose, NO markdown fences. Schema:
     "signs": boolean,       // true if signs/symptoms/vitals were mentioned
     "treatment": boolean    // true if treatment given was mentioned
   },
-  "hedges": string[],       // list of specific vague phrases found — e.g. ["seems stable", "BP is low", "GCS around 13"]
+  "hedges": string[],       // 列出逐字稿中具體的模糊用詞，請使用學員實際說出的中文或英文原句片段，例如：["好像還穩定", "血壓有點低", "GCS 大概 13"]
   "order": string,          // detected MIST component order — use "MIST" | "MITS" | "MSIT" | "MTSI" | "IMST" | "ISMS" | "SMIT" | "TMIS" | "TIMS" | "out-of-order" | "incomplete"
-  "gaps": string[],         // specific actionable gaps — e.g. ["tourniquet time not stated", "GCS given as range"]
-  "modelAnswer": string     // complete correct MIST report for this specific patient, using scenario data
+  "gaps": string[],         // 以繁體中文列出具體可行動的缺漏項目，例如：["未報告止血帶施加時間", "GCS 以範圍表示而非確切數值"]
+  "modelAnswer": string     // 以繁體中文撰寫針對此情境的完整正確 MIST 報告，必須使用情境中的實際數值、時間與細節
 }
 
-PRECISION RULES (populate hedges[]):
-- Vague quantifiers count: "seems", "maybe", "approximately", "like", "kind of", "about", "around"
-- Missing specifics count: said "BP is low" when scenario has exact value → add "said 'BP is low' instead of [actual value]"
-- Rounding that loses clinical significance counts: "GCS around 13" when exact value available
+PRECISION RULES（填入 hedges[]）：
+- 模糊量詞算：「好像」、「可能」、「大概」、「差不多」、「左右」、「似乎」、「approximately」、「about」、「around」
+- 缺少具體數值算：說「血壓很低」但情境有確切數值 → 加入「說『血壓很低』而非實際數值 [actual value]」
+- 臨床上有意義的四捨五入算：「GCS 大概 13」但有確切數值可用
 
-ABBREVIATION ALLOWLIST (these are precise, do NOT flag as hedges):
-- TQ = tourniquet  |  GCS = Glasgow Coma Scale  |  BP = blood pressure
-- HR / PR = heart/pulse rate  |  RR = respiratory rate  |  SpO2 / O2sat = pulse ox
-- "TQ at 14:32" is precise  |  "BP 90/60" is precise  |  "GCS 13" is precise
+ABBREVIATION ALLOWLIST（以下縮寫屬精確用語，不列入 hedges）：
+- TQ = 止血帶  |  GCS = 格拉斯哥昏迷指數  |  BP = 血壓
+- HR / PR = 心跳／脈搏速率  |  RR = 呼吸速率  |  SpO2 / O2sat = 血氧濃度
+- 「TQ at 14:32」是精確的  |  「BP 90/60」是精確的  |  「GCS 13」是精確的
 
-ORDER DETECTION — identify the first sentence where each MIST component appears, then report the order.
-If fewer than 4 components appear, return "incomplete".
-Over-flag incorrect order rather than pass it — false negatives are higher risk.
+ORDER DETECTION — 辨識逐字稿中每個 MIST 要素第一次出現的順序，並回傳對應的排列代碼。
+若少於 4 個要素出現，回傳 "incomplete"。
+寧可過度標記順序錯誤，也不要漏報——漏報的風險高於誤報。
 
-MODEL ANSWER — use the specific vitals, numbers, and times from the scenario, not generic advice.`;
+MODEL ANSWER — 必須使用情境中的具體數值、時間與細節，不得給予通用建議。`;
 
 function buildUserContent(scenario, transcript) {
   return `SCENARIO:
