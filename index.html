@@ -173,6 +173,47 @@
     }
     .settings-hint a { color: var(--accent); }
 
+    /* ── Settings tabs ── */
+    .settings-tabs {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 24px;
+      background: var(--bg);
+      border-radius: 10px;
+      padding: 4px;
+    }
+    .tab-btn {
+      flex: 1;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      font-family: inherit;
+      font-size: 0.85rem;
+      font-weight: 600;
+      padding: 8px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .tab-btn.active {
+      background: var(--surface);
+      color: var(--accent);
+      box-shadow: 0 2px 8px rgba(79,70,229,0.12);
+    }
+    .settings-panel { display: block; }
+    .settings-panel.hidden { display: none !important; }
+
+    /* ── Unlock status messages ── */
+    #unlock-status {
+      font-size: 0.82rem;
+      font-weight: 600;
+      min-height: 20px;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+    #unlock-status.ok { color: var(--success); }
+    #unlock-status.err { color: var(--danger); }
+
     /* ── Main layout ── */
     main {
       width: 100%;
@@ -695,22 +736,45 @@
 <div id="settings-overlay">
   <div class="settings-box">
     <h2>⚙️ 設定</h2>
-    <label for="api-key-input">Anthropic API 金鑰（AI 評分）</label>
-    <input type="password" id="api-key-input" placeholder="sk-ant-..." autocomplete="off" spellcheck="false">
-    <p class="settings-hint">
-      請至 <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> 取得金鑰。
-    </p>
-    <label for="groq-key-input">Groq API 金鑰（語音辨識）</label>
-    <input type="password" id="groq-key-input" placeholder="gsk_..." autocomplete="off" spellcheck="false">
-    <p class="settings-hint">
-      免費使用，請至 <a href="https://console.groq.com" target="_blank">console.groq.com</a> 取得金鑰。<br>
-      金鑰僅儲存於本裝置，不會傳送至任何其他伺服器。
-    </p>
-    <div class="settings-noise-row">
+
+    <!-- Tab switcher -->
+    <div class="settings-tabs">
+      <button class="tab-btn active" id="tab-code-btn">🔑 通行碼</button>
+      <button class="tab-btn" id="tab-manual-btn">手動輸入金鑰</button>
+    </div>
+
+    <!-- ── Access code panel ── -->
+    <div class="settings-panel" id="panel-code">
+      <label for="access-code-input">通行碼</label>
+      <input type="password" id="access-code-input" placeholder="輸入通行碼..." autocomplete="off" spellcheck="false">
+      <p class="settings-hint">
+        輸入通行碼可自動載入金鑰，無需自行申請 API 帳號。
+      </p>
+      <div id="unlock-status"></div>
+      <button class="primary" id="unlock-btn">解鎖</button>
+    </div>
+
+    <!-- ── Manual key panel ── -->
+    <div class="settings-panel hidden" id="panel-manual">
+      <label for="api-key-input">Anthropic API 金鑰（AI 評分）</label>
+      <input type="password" id="api-key-input" placeholder="sk-ant-..." autocomplete="off" spellcheck="false">
+      <p class="settings-hint">
+        請至 <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> 取得金鑰。
+      </p>
+      <label for="groq-key-input">Groq API 金鑰（語音辨識）</label>
+      <input type="password" id="groq-key-input" placeholder="gsk_..." autocomplete="off" spellcheck="false">
+      <p class="settings-hint">
+        免費使用，請至 <a href="https://console.groq.com" target="_blank">console.groq.com</a> 取得金鑰。<br>
+        金鑰僅儲存於本裝置，不會傳送至任何其他伺服器。
+      </p>
+      <button class="primary" id="save-key-btn">儲存並開始</button>
+    </div>
+
+    <!-- ── Shared: noise toggle (always visible) ── -->
+    <div class="settings-noise-row" style="margin-top:16px;">
       <input type="checkbox" id="noise-toggle" checked>
       <label for="noise-toggle">啟用背景雜音（增加沉浸感）</label>
     </div>
-    <button class="primary" id="save-key-btn">儲存並開始</button>
   </div>
 </div>
 
@@ -842,9 +906,33 @@ const settingsOverlay = document.getElementById("settings-overlay");
 const apiKeyInput = document.getElementById("api-key-input");
 const groqKeyInput = document.getElementById("groq-key-input");
 
+// ── Settings tabs ──────────────────────────────────────────────────────────
+const panelCode = document.getElementById("panel-code");
+const panelManual = document.getElementById("panel-manual");
+const tabCodeBtn = document.getElementById("tab-code-btn");
+const tabManualBtn = document.getElementById("tab-manual-btn");
+
+function showTab(tab) {
+  if (tab === "code") {
+    panelCode.classList.remove("hidden");
+    panelManual.classList.add("hidden");
+    tabCodeBtn.classList.add("active");
+    tabManualBtn.classList.remove("active");
+  } else {
+    panelManual.classList.remove("hidden");
+    panelCode.classList.add("hidden");
+    tabManualBtn.classList.add("active");
+    tabCodeBtn.classList.remove("active");
+  }
+}
+tabCodeBtn.addEventListener("click", () => showTab("code"));
+tabManualBtn.addEventListener("click", () => showTab("manual"));
+
 function openSettings() {
   apiKeyInput.value = apiKey;
   groqKeyInput.value = groqKey;
+  // If keys already set, show manual tab so user can see/edit them
+  if (apiKey && groqKey) showTab("manual"); else showTab("code");
   settingsOverlay.classList.remove("hidden");
 }
 function closeSettings() { settingsOverlay.classList.add("hidden"); }
@@ -852,6 +940,8 @@ function closeSettings() { settingsOverlay.classList.add("hidden"); }
 if (!apiKey || !groqKey) openSettings();
 
 document.getElementById("gear-btn").addEventListener("click", openSettings);
+
+// ── Manual save ────────────────────────────────────────────────────────────
 document.getElementById("save-key-btn").addEventListener("click", () => {
   const k = apiKeyInput.value.trim();
   const gk = groqKeyInput.value.trim();
@@ -875,6 +965,52 @@ document.getElementById("save-key-btn").addEventListener("click", () => {
   localStorage.setItem(GROQ_KEY_STORAGE, gk);
   closeSettings();
 });
+
+// ── Access code unlock ─────────────────────────────────────────────────────
+const unlockStatus = document.getElementById("unlock-status");
+const accessCodeInput = document.getElementById("access-code-input");
+
+async function doUnlock() {
+  const code = accessCodeInput.value.trim();
+  if (!code) return;
+  unlockStatus.textContent = "⏳ 驗證中...";
+  unlockStatus.className = "";
+  document.getElementById("unlock-btn").disabled = true;
+
+  try {
+    const res = await fetch("/api/unlock", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code })
+    });
+    const data = await res.json();
+    if (res.ok && data.anthropicKey && data.groqKey) {
+      apiKey = data.anthropicKey;
+      groqKey = data.groqKey;
+      localStorage.setItem(KEY_STORAGE, apiKey);
+      localStorage.setItem(GROQ_KEY_STORAGE, groqKey);
+      unlockStatus.textContent = "✅ 解鎖成功！";
+      unlockStatus.className = "ok";
+      setTimeout(() => closeSettings(), 800);
+    } else if (res.status === 401) {
+      unlockStatus.textContent = "❌ 通行碼錯誤";
+      unlockStatus.className = "err";
+    } else if (res.status === 503) {
+      unlockStatus.textContent = "⚠️ 伺服器尚未設定，請改用手動輸入";
+      unlockStatus.className = "err";
+    } else {
+      unlockStatus.textContent = "❌ 發生錯誤，請再試一次";
+      unlockStatus.className = "err";
+    }
+  } catch {
+    unlockStatus.textContent = "❌ 網路錯誤，請再試一次";
+    unlockStatus.className = "err";
+  }
+  document.getElementById("unlock-btn").disabled = false;
+}
+
+document.getElementById("unlock-btn").addEventListener("click", doUnlock);
+accessCodeInput.addEventListener("keydown", e => { if (e.key === "Enter") doUnlock(); });
 
 // ── Scenario management (random, no dropdown) ─────────────────────────────
 let currentScenarioIndex = -1;
