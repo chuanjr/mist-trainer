@@ -1012,6 +1012,19 @@ function setScenario(index) {
   resetUI();
 }
 
+// ── Shared DOM refs (declared before setScenario is first called) ─────────
+const CIRCUMFERENCE = 339.29; // 2π × 54
+const timerDisplay = document.getElementById("timer-display");
+const timerCircle = document.getElementById("timer-circle");
+const pulseIcon = document.getElementById("pulse-icon");
+const recordCard = document.getElementById("record-card");
+const recordBtn = document.getElementById("record-btn");
+const errorBanner = document.getElementById("error-banner");
+const errorMsg = document.getElementById("error-msg");
+const retryBtn = document.getElementById("retry-btn");
+const loadingCard = document.getElementById("loading-card");
+const resultsCard = document.getElementById("results-card");
+
 // Initial random pick
 setScenario(pickRandomScenario(-1));
 
@@ -1020,10 +1033,6 @@ document.getElementById("random-btn").addEventListener("click", () => {
 });
 
 // ── Timer ─────────────────────────────────────────────────────────────────
-const CIRCUMFERENCE = 339.29; // 2π × 54
-const timerDisplay = document.getElementById("timer-display");
-const timerCircle = document.getElementById("timer-circle");
-const pulseIcon = document.getElementById("pulse-icon");
 
 function updateTimer({ elapsed, limit }) {
   const remaining = Math.max(0, limit - elapsed);
@@ -1083,8 +1092,6 @@ function stopDistractions() {
 }
 
 // ── Record button ─────────────────────────────────────────────────────────
-const recordCard = document.getElementById("record-card");
-const recordBtn = document.getElementById("record-btn");
 let isRecording = false;
 
 recordBtn.addEventListener("click", () => {
@@ -1132,10 +1139,6 @@ function startRecording() {
 }
 
 // ── Speech errors ──────────────────────────────────────────────────────────
-const errorBanner = document.getElementById("error-banner");
-const errorMsg = document.getElementById("error-msg");
-const retryBtn = document.getElementById("retry-btn");
-
 function handleSpeechError(type) {
   isRecording = false;
   recordBtn.textContent = "⏺ 開始錄音";
@@ -1176,9 +1179,6 @@ document.getElementById("submit-text-btn").addEventListener("click", () => {
 });
 
 // ── Evaluation ─────────────────────────────────────────────────────────────
-const loadingCard = document.getElementById("loading-card");
-const resultsCard = document.getElementById("results-card");
-
 async function runEvaluation(transcript, durationSec, scenario) {
   resetTimer();
   loadingCard.classList.remove("hidden");
