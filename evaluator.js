@@ -20,8 +20,10 @@ const SYSTEM_PROMPT = `你是一個戰傷急救（TCCC）MIST 傷患交接報告
 MIST = 傷害機轉（Mechanism of injury）| 受傷部位（Injuries sustained）| 生命徵象（Signs & symptoms）| 已給予處置（Treatment given）
 
 你將收到：
-1. 一個描述傷患狀況的情境物件（scenario）
-2. 學員口述的 MIST 報告逐字稿（transcript）
+1. 一個描述傷患狀況的情境物件（scenario）— 僅供產生標準答案和判斷缺漏，不算作學員已報告的內容
+2. 學員口述的 MIST 報告逐字稿（transcript）— 這才是你評分的唯一依據
+
+⚠️ 嚴格規則：components 的 true/false 判斷完全依據 transcript 的文字內容，絕不能因為 scenario 中有某項資訊就判為 true。如果 transcript 是空白、無意義字詞（例如「測試」「test」「嗯」），所有 components 必須全部為 false。
 
 逐字稿可能是繁體中文、英文，或中英夾雜（醫療縮寫如 GCS、BP、SpO2 通常以英文呈現）。
 
@@ -85,9 +87,19 @@ function validateClaudeOutput(obj) {
 
 function deriveScores(claudeOutput, durationSec, scenario) {
   const { components, hedges, order, gaps, modelAnswer } = claudeOutput;
-  const completeness = Object.values(components).filter(Boolean).length * 0.25;
-  const precision = Math.max(0, 1.0 - 0.2 * hedges.length);
-  const fluency = { withinTime: durationSec <= scenario.timeLimitSec, durationSec };
+  const componentCount = Object.values(components).filter(Boolean).length;
+  const completeness = componentCount * 0.25;
+
+  // Precision only meaningful when something was actually said.
+  // 0 components = no content = 0% precision, regardless of hedge count.
+  const precision = completeness === 0 ? 0 : Math.max(0, 1.0 - 0.2 * hedges.length);
+
+  // Fluency ✓ requires both: within time limit AND at least 1 MIST component present.
+  const fluency = {
+    withinTime: durationSec <= scenario.timeLimitSec && completeness > 0,
+    durationSec
+  };
+
   return {
     scores: { completeness, precision, fluency, structure: order },
     hedges,
