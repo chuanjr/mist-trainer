@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MIST Trainer</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --border: #30363d;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --accent: #58a6ff;
+      --danger: #f85149;
+      --warn: #d29922;
+      --success: #3fb950;
+      --red-timer: #f85149;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px;
+    }
+
+    header {
+      width: 100%;
+      max-width: 640px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 32px;
+    }
+
+    h1 { font-size: 1.1rem; font-weight: 600; letter-spacing: 0.05em; }
+    .subtitle { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+
+    #gear-btn {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 6px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 1rem;
+      line-height: 1;
+    }
+    #gear-btn:hover { color: var(--text); border-color: var(--accent); }
+
+    /* iOS Safari warning */
+    #ios-warning {
+      width: 100%;
+      max-width: 640px;
+      background: #2d1f00;
+      border: 1px solid var(--warn);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 0.82rem;
+      color: #e3b341;
+      margin-bottom: 20px;
+    }
+
+    /* Settings overlay */
+    #settings-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+    #settings-overlay.hidden { display: none; }
+
+    .settings-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 28px 24px;
+      width: 100%;
+      max-width: 400px;
+    }
+    .settings-box h2 { font-size: 1rem; margin-bottom: 16px; }
+    .settings-box label { font-size: 0.82rem; color: var(--muted); display: block; margin-bottom: 6px; }
+    .settings-box input {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      margin-bottom: 16px;
+      font-family: monospace;
+    }
+    .settings-box input:focus { outline: none; border-color: var(--accent); }
+    .settings-hint { font-size: 0.75rem; color: var(--muted); margin-bottom: 20px; }
+    .settings-hint a { color: var(--accent); }
+
+    /* Main card */
+    main {
+      width: 100%;
+      max-width: 640px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    /* Scenario picker */
+    #scenario-label { font-size: 0.75rem; color: var(--muted); margin-bottom: 8px; }
+    #scenario-select {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238b949e' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 32px;
+    }
+    #scenario-select:focus { outline: none; border-color: var(--accent); }
+
+    .scenario-meta {
+      display: flex;
+      gap: 12px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+    .badge {
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      color: var(--muted);
+    }
+    .badge.pressure { border-color: var(--danger); color: var(--danger); }
+
+    /* MIST guide header */
+    #mist-guide {
+      font-size: 0.78rem;
+      color: var(--muted);
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-top: 14px;
+    }
+    .mist-letter {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px;
+      text-align: center;
+    }
+    .mist-letter span { display: block; font-size: 1.1rem; font-weight: 700; color: var(--accent); }
+
+    /* Record section */
+    #record-card { text-align: center; }
+
+    #timer-ring {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 120px;
+      height: 120px;
+      margin-bottom: 16px;
+    }
+    #timer-svg { position: absolute; top: 0; left: 0; transform: rotate(-90deg); }
+    #timer-circle {
+      fill: none;
+      stroke: var(--accent);
+      stroke-width: 4;
+      stroke-linecap: round;
+      stroke-dasharray: 339.29; /* 2π×54 */
+      stroke-dashoffset: 0;
+      transition: stroke 0.3s;
+    }
+    #timer-circle.pressure { stroke: var(--red-timer); }
+    #timer-display {
+      font-size: 2rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.02em;
+    }
+    #timer-display.over { color: var(--danger); }
+
+    #record-btn {
+      width: 100%;
+      padding: 14px;
+      border-radius: 8px;
+      border: none;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      background: var(--accent);
+      color: #0d1117;
+      transition: background 0.2s, opacity 0.2s;
+    }
+    #record-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    #record-btn.recording { background: var(--danger); color: #fff; }
+
+    #interim-text {
+      min-height: 48px;
+      margin-top: 14px;
+      font-size: 0.85rem;
+      color: var(--muted);
+      line-height: 1.5;
+      text-align: left;
+      font-style: italic;
+    }
+
+    #low-confidence-warning {
+      margin-top: 8px;
+      font-size: 0.75rem;
+      color: var(--warn);
+      text-align: left;
+    }
+
+    /* Text fallback */
+    #text-fallback { display: none; }
+    #text-fallback textarea {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      min-height: 80px;
+      resize: vertical;
+      font-family: inherit;
+      margin-bottom: 10px;
+    }
+    #text-fallback textarea:focus { outline: none; border-color: var(--accent); }
+
+    /* Error banner */
+    #error-banner {
+      background: #2d1217;
+      border: 1px solid var(--danger);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 0.82rem;
+      color: var(--danger);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+    #error-banner button {
+      background: none;
+      border: 1px solid var(--danger);
+      color: var(--danger);
+      padding: 4px 10px;
+      border-radius: 5px;
+      font-size: 0.78rem;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    /* Loading */
+    #loading-card { text-align: center; color: var(--muted); font-size: 0.9rem; }
+    .spinner {
+      display: inline-block;
+      width: 20px; height: 20px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Results */
+    #results-card h2 { font-size: 0.85rem; color: var(--muted); margin-bottom: 16px; letter-spacing: 0.06em; text-transform: uppercase; }
+
+    .score-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .score-box {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+    }
+    .score-box .label { font-size: 0.7rem; color: var(--muted); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .score-box .value { font-size: 1.4rem; font-weight: 700; }
+    .score-box .value.good { color: var(--success); }
+    .score-box .value.bad { color: var(--danger); }
+    .score-box .value.warn { color: var(--warn); }
+
+    .section-label { font-size: 0.75rem; color: var(--muted); margin: 14px 0 6px; text-transform: uppercase; letter-spacing: 0.05em; }
+
+    .gaps-list { list-style: none; display: flex; flex-direction: column; gap: 5px; }
+    .gaps-list li {
+      font-size: 0.82rem;
+      padding: 6px 10px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      color: var(--muted);
+    }
+    .gaps-list li::before { content: "→ "; color: var(--warn); }
+
+    .model-answer {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      border-radius: 6px;
+      padding: 12px;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      color: var(--text);
+    }
+
+    #try-again-btn {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: none;
+      color: var(--text);
+      font-size: 0.9rem;
+      cursor: pointer;
+      margin-top: 16px;
+    }
+    #try-again-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    .hidden { display: none !important; }
+
+    button.primary {
+      background: var(--accent);
+      color: #0d1117;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+    }
+    button.primary:hover { opacity: 0.88; }
+  </style>
+</head>
+<body>
+
+<!-- iOS Safari warning (shown only on iOS Safari) -->
+<div id="ios-warning" class="hidden">
+  For best results on iPhone, use <strong>Chrome</strong>. Safari may cut off mid-recording.
+</div>
+
+<!-- Settings overlay -->
+<div id="settings-overlay">
+  <div class="settings-box">
+    <h2>⚙️ Settings</h2>
+    <label for="api-key-input">Anthropic API Key</label>
+    <input type="password" id="api-key-input" placeholder="sk-ant-..." autocomplete="off" spellcheck="false">
+    <p class="settings-hint">
+      Key is stored only in this browser. Never sent to any server.<br>
+      Get a key at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>.
+    </p>
+    <button class="primary" id="save-key-btn">Save & Start</button>
+  </div>
+</div>
+
+<header>
+  <div>
+    <h1>MIST TRAINER</h1>
+    <p class="subtitle">Mechanism · Injuries · Signs · Treatment</p>
+  </div>
+  <button id="gear-btn" title="Settings">⚙</button>
+</header>
+
+<main>
+
+  <!-- Scenario picker -->
+  <div class="card">
+    <div id="scenario-label">SELECT SCENARIO</div>
+    <select id="scenario-select"></select>
+    <div class="scenario-meta">
+      <span class="badge" id="badge-difficulty"></span>
+      <span class="badge" id="badge-time"></span>
+    </div>
+    <div id="mist-guide">
+      <div class="mist-letter"><span>M</span>mechanism · distance</div>
+      <div class="mist-letter"><span>I</span>injuries sustained</div>
+      <div class="mist-letter"><span>S</span>vitals · signs</div>
+      <div class="mist-letter"><span>T</span>treatment · times</div>
+    </div>
+  </div>
+
+  <!-- Record -->
+  <div class="card" id="record-card">
+    <div id="timer-ring">
+      <svg id="timer-svg" width="120" height="120" viewBox="0 0 120 120">
+        <circle cx="60" cy="60" r="54" fill="none" stroke="#30363d" stroke-width="4"/>
+        <circle id="timer-circle" cx="60" cy="60" r="54"/>
+      </svg>
+      <div id="timer-display">—</div>
+    </div>
+
+    <button id="record-btn">⏺ Record</button>
+    <div id="interim-text"></div>
+    <div id="low-confidence-warning" hidden>⚠ Low confidence — review transcript before submitting</div>
+
+    <!-- Text fallback (shown on STT network error) -->
+    <div id="text-fallback">
+      <p style="font-size:0.8rem;color:var(--warn);margin-bottom:8px;">
+        ⚠ Speech recognition unavailable — type or paste your transcript:
+      </p>
+      <textarea id="fallback-textarea" placeholder="Type your MIST report here..."></textarea>
+      <button class="primary" id="submit-text-btn">Evaluate</button>
+    </div>
+  </div>
+
+  <!-- Error banner (hidden by default) -->
+  <div id="error-banner" class="hidden">
+    <span id="error-msg"></span>
+    <button id="retry-btn">Try again</button>
+  </div>
+
+  <!-- Loading -->
+  <div class="card hidden" id="loading-card">
+    <span class="spinner"></span> Evaluating…
+  </div>
+
+  <!-- Results -->
+  <div class="card hidden" id="results-card">
+    <h2>Results</h2>
+    <div class="score-grid">
+      <div class="score-box">
+        <div class="label">Completeness</div>
+        <div class="value" id="r-completeness"></div>
+      </div>
+      <div class="score-box">
+        <div class="label">Precision</div>
+        <div class="value" id="r-precision"></div>
+      </div>
+      <div class="score-box">
+        <div class="label">Fluency</div>
+        <div class="value" id="r-fluency"></div>
+      </div>
+      <div class="score-box">
+        <div class="label">Structure</div>
+        <div class="value" id="r-structure"></div>
+      </div>
+    </div>
+
+    <div id="hedges-section" class="hidden">
+      <div class="section-label">Vague language flagged</div>
+      <ul class="gaps-list" id="r-hedges"></ul>
+    </div>
+
+    <div id="gaps-section" class="hidden">
+      <div class="section-label">Gaps</div>
+      <ul class="gaps-list" id="r-gaps"></ul>
+    </div>
+
+    <div class="section-label">Model answer</div>
+    <div class="model-answer" id="r-model-answer"></div>
+
+    <button id="try-again-btn">↩ Try again</button>
+  </div>
+
+</main>
+
+<script src="scenarios.js"></script>
+<script src="evaluator.js"></script>
+<script src="speech.js"></script>
+<script>
+// ── iOS Safari detection ──────────────────────────────────────────────────
+const isIosSafari = /iP(hone|ad|od)/.test(navigator.userAgent) &&
+  /WebKit/.test(navigator.userAgent) &&
+  !/CriOS/.test(navigator.userAgent) &&
+  !/FxiOS/.test(navigator.userAgent);
+if (isIosSafari) document.getElementById("ios-warning").classList.remove("hidden");
+
+// ── API key (localStorage) ────────────────────────────────────────────────
+const KEY_STORAGE = "mist_api_key";
+let apiKey = localStorage.getItem(KEY_STORAGE) || "";
+
+const settingsOverlay = document.getElementById("settings-overlay");
+const apiKeyInput = document.getElementById("api-key-input");
+
+function openSettings() {
+  apiKeyInput.value = apiKey;
+  settingsOverlay.classList.remove("hidden");
+}
+function closeSettings() { settingsOverlay.classList.add("hidden"); }
+
+if (!apiKey) openSettings();
+
+document.getElementById("gear-btn").addEventListener("click", openSettings);
+document.getElementById("save-key-btn").addEventListener("click", () => {
+  const k = apiKeyInput.value.trim();
+  if (!k.startsWith("sk-")) { apiKeyInput.style.borderColor = "var(--danger)"; return; }
+  apiKeyInput.style.borderColor = "";
+  apiKey = k;
+  localStorage.setItem(KEY_STORAGE, k);
+  closeSettings();
+});
+
+// ── Scenario picker ───────────────────────────────────────────────────────
+const sel = document.getElementById("scenario-select");
+const badgeDiff = document.getElementById("badge-difficulty");
+const badgeTime = document.getElementById("badge-time");
+
+SCENARIOS.forEach((sc, i) => {
+  const opt = document.createElement("option");
+  opt.value = i;
+  opt.textContent = sc.title;
+  sel.appendChild(opt);
+});
+
+function currentScenario() { return SCENARIOS[+sel.value]; }
+
+function updateScenarioMeta() {
+  const sc = currentScenario();
+  badgeDiff.textContent = sc.difficulty;
+  badgeDiff.className = "badge" + (sc.difficulty === "pressure" ? " pressure" : "");
+  badgeTime.textContent = `${sc.timeLimitSec}s limit`;
+  resetUI();
+}
+
+sel.addEventListener("change", updateScenarioMeta);
+updateScenarioMeta();
+
+// ── Timer ─────────────────────────────────────────────────────────────────
+const CIRCUMFERENCE = 339.29; // 2π × 54
+const timerDisplay = document.getElementById("timer-display");
+const timerCircle = document.getElementById("timer-circle");
+
+function updateTimer({ elapsed, limit }) {
+  const remaining = Math.max(0, limit - elapsed);
+  const pct = 1 - (elapsed / limit);
+  timerCircle.style.strokeDashoffset = CIRCUMFERENCE * (1 - Math.max(0, pct));
+  timerDisplay.textContent = remaining < 10
+    ? remaining.toFixed(1)
+    : Math.ceil(remaining).toString();
+  if (elapsed > limit) {
+    timerDisplay.classList.add("over");
+    timerCircle.classList.add("pressure");
+  }
+}
+
+function resetTimer() {
+  timerDisplay.textContent = "—";
+  timerDisplay.classList.remove("over");
+  timerCircle.style.strokeDashoffset = "0";
+  timerCircle.classList.remove("pressure");
+}
+
+// ── Record button ─────────────────────────────────────────────────────────
+const recordBtn = document.getElementById("record-btn");
+let isRecording = false;
+
+recordBtn.addEventListener("click", () => {
+  if (!apiKey) { openSettings(); return; }
+  if (isRecording) {
+    Speech.stop();
+    return;
+  }
+  startRecording();
+});
+
+function startRecording() {
+  if (!Speech.isSupported()) {
+    showTextFallback();
+    return;
+  }
+  isRecording = true;
+  recordBtn.textContent = "⏹ Stop";
+  recordBtn.classList.add("recording");
+  document.getElementById("results-card").classList.add("hidden");
+  document.getElementById("error-banner").classList.add("hidden");
+  document.getElementById("interim-text").textContent = "";
+  document.getElementById("low-confidence-warning").hidden = true;
+
+  const sc = currentScenario();
+  Speech.start({
+    limit: sc.timeLimitSec,
+    onTick: updateTimer,
+    onFinal: ({ transcript, durationSec }) => {
+      isRecording = false;
+      recordBtn.textContent = "⏺ Record";
+      recordBtn.classList.remove("recording");
+      runEvaluation(transcript, durationSec, sc);
+    },
+    onErr: handleSpeechError
+  });
+}
+
+// ── Speech errors ─────────────────────────────────────────────────────────
+const errorBanner = document.getElementById("error-banner");
+const errorMsg = document.getElementById("error-msg");
+const retryBtn = document.getElementById("retry-btn");
+
+function handleSpeechError(type) {
+  isRecording = false;
+  recordBtn.textContent = "⏺ Record";
+  recordBtn.classList.remove("recording");
+  resetTimer();
+
+  const messages = {
+    "mic-denied": "Microphone access required. Allow mic in browser settings, then try again.",
+    "no-speech":  "No speech detected — tap Record and start speaking.",
+    "network":    null, // show text fallback instead
+    "unknown":    "Speech recognition error. Try again."
+  };
+
+  if (type === "network") { showTextFallback(); return; }
+
+  errorMsg.textContent = messages[type] || "Speech error. Try again.";
+  retryBtn.textContent = "Try again";
+  retryBtn.onclick = startRecording;
+  errorBanner.classList.remove("hidden");
+}
+
+retryBtn.addEventListener("click", () => errorBanner.classList.add("hidden"));
+
+// ── Text fallback ─────────────────────────────────────────────────────────
+function showTextFallback() {
+  document.getElementById("text-fallback").style.display = "block";
+  document.getElementById("record-btn").style.display = "none";
+}
+
+document.getElementById("submit-text-btn").addEventListener("click", () => {
+  const text = document.getElementById("fallback-textarea").value.trim();
+  if (!text) return;
+  runEvaluation(text, currentScenario().timeLimitSec, currentScenario());
+});
+
+// ── Evaluation ────────────────────────────────────────────────────────────
+const loadingCard = document.getElementById("loading-card");
+const resultsCard = document.getElementById("results-card");
+
+async function runEvaluation(transcript, durationSec, scenario) {
+  resetTimer();
+  loadingCard.classList.remove("hidden");
+  resultsCard.classList.add("hidden");
+  errorBanner.classList.add("hidden");
+  recordBtn.disabled = true;
+
+  try {
+    const result = await evaluate(scenario, transcript, durationSec, apiKey);
+    loadingCard.classList.add("hidden");
+    recordBtn.disabled = false;
+
+    if (result.error === "invalid_key") {
+      openSettings();
+      return;
+    }
+    if (result.error === "timeout") {
+      showEvalError("Evaluation timed out — try again.", startRecording);
+      return;
+    }
+    if (result.error) {
+      showEvalError("Evaluation failed — try again.", startRecording);
+      return;
+    }
+
+    showResults(result, durationSec, scenario);
+  } catch (err) {
+    loadingCard.classList.add("hidden");
+    recordBtn.disabled = false;
+    showEvalError("Unexpected error — try again.", startRecording);
+  }
+}
+
+function showEvalError(msg, onRetry) {
+  errorMsg.textContent = msg;
+  retryBtn.textContent = "Try again";
+  retryBtn.onclick = onRetry;
+  errorBanner.classList.remove("hidden");
+}
+
+// ── Results rendering ─────────────────────────────────────────────────────
+function pct(n) { return Math.round(n * 100) + "%"; }
+
+function scoreClass(n) {
+  if (n >= 0.8) return "good";
+  if (n >= 0.5) return "warn";
+  return "bad";
+}
+
+function showResults(result, durationSec, scenario) {
+  const { scores, hedges, gaps, modelAnswer } = result;
+
+  // Completeness
+  const rc = document.getElementById("r-completeness");
+  rc.textContent = pct(scores.completeness);
+  rc.className = "value " + scoreClass(scores.completeness);
+
+  // Precision
+  const rp = document.getElementById("r-precision");
+  rp.textContent = pct(scores.precision);
+  rp.className = "value " + scoreClass(scores.precision);
+
+  // Fluency
+  const rf = document.getElementById("r-fluency");
+  const { withinTime, durationSec: dur } = scores.fluency;
+  rf.textContent = withinTime
+    ? `${Math.round(dur)}s ✓`
+    : `${Math.round(dur)}s ✗`;
+  rf.className = "value " + (withinTime ? "good" : "bad");
+
+  // Structure
+  const rs = document.getElementById("r-structure");
+  rs.textContent = scores.structure;
+  rs.className = "value " + (scores.structure === "MIST" ? "good" : scores.structure === "incomplete" ? "bad" : "warn");
+
+  // Hedges
+  const hedgesSection = document.getElementById("hedges-section");
+  const hedgesList = document.getElementById("r-hedges");
+  hedgesList.innerHTML = "";
+  if (hedges && hedges.length > 0) {
+    hedgesSection.classList.remove("hidden");
+    hedges.forEach(h => { const li = document.createElement("li"); li.textContent = h; hedgesList.appendChild(li); });
+  } else {
+    hedgesSection.classList.add("hidden");
+  }
+
+  // Gaps
+  const gapsSection = document.getElementById("gaps-section");
+  const gapsList = document.getElementById("r-gaps");
+  gapsList.innerHTML = "";
+  if (gaps && gaps.length > 0) {
+    gapsSection.classList.remove("hidden");
+    gaps.forEach(g => { const li = document.createElement("li"); li.textContent = g; gapsList.appendChild(li); });
+  } else {
+    gapsSection.classList.add("hidden");
+  }
+
+  // Model answer
+  document.getElementById("r-model-answer").textContent = modelAnswer || "";
+
+  resultsCard.classList.remove("hidden");
+  resultsCard.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+// ── Try again ─────────────────────────────────────────────────────────────
+document.getElementById("try-again-btn").addEventListener("click", resetUI);
+
+function resetUI() {
+  resultsCard.classList.add("hidden");
+  loadingCard.classList.add("hidden");
+  errorBanner.classList.add("hidden");
+  document.getElementById("text-fallback").style.display = "none";
+  document.getElementById("record-btn").style.display = "";
+  document.getElementById("interim-text").textContent = "";
+  document.getElementById("low-confidence-warning").hidden = true;
+  resetTimer();
+  const sc = currentScenario();
+  timerCircle.className = sc.difficulty === "pressure" ? "pressure" : "";
+}
+</script>
+</body>
+</html>
