@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
   <title>MIST 戰傷報告訓練</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -22,8 +22,14 @@
       --glass:   rgba(6,8,20,0.72);
     }
 
-    html, body {
+    html {
+      /* iOS Safari: prevent elastic bounce / overflow */
+      position: fixed; width: 100%; height: 100%; overflow: hidden;
+    }
+    body {
       width: 100%; height: 100%; overflow: hidden;
+      /* fallback for browsers without dvh */
+      height: 100dvh;
       background: #020408;
       font-family: "Noto Sans TC", -apple-system, sans-serif;
       color: var(--text);
@@ -471,8 +477,15 @@
 const bgCanvas = document.getElementById('bg-canvas');
 const ctx = bgCanvas.getContext('2d');
 let CW, CH;
-function resizeCanvas() { CW = bgCanvas.width = window.innerWidth; CH = bgCanvas.height = window.innerHeight; }
-resizeCanvas(); window.addEventListener('resize', resizeCanvas);
+function resizeCanvas() {
+  // Use visualViewport when available (iOS Safari gives accurate values)
+  const vv = window.visualViewport;
+  CW = bgCanvas.width  = vv ? Math.round(vv.width)  : document.documentElement.clientWidth;
+  CH = bgCanvas.height = vv ? Math.round(vv.height) : document.documentElement.clientHeight;
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+if (window.visualViewport) window.visualViewport.addEventListener('resize', resizeCanvas);
 
 let sceneType = 'urban';
 let sceneParticles = [];
@@ -570,16 +583,22 @@ function renderParticles() {
   sceneParticles.forEach(p=>{ p.x+=p.vx; p.y+=p.vy; p.life-=p.decay; if(p.type==='ember'){ p.vx+=(Math.random()-.5)*.08; ctx.globalAlpha=p.life; ctx.fillStyle=p.color; ctx.beginPath(); ctx.arc(p.x,p.y,p.size*p.life,0,Math.PI*2); ctx.fill(); if(p.life>.5){const g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.size*4); g.addColorStop(0,p.color+'88'); g.addColorStop(1,'transparent'); ctx.fillStyle=g; ctx.fillRect(p.x-p.size*4,p.y-p.size*4,p.size*8,p.size*8);} }else{ ctx.globalAlpha=p.life*.55; ctx.fillStyle=p.color; ctx.beginPath(); ctx.arc(p.x,p.y,p.size,0,Math.PI*2); ctx.fill(); } ctx.globalAlpha=1; });
 }
 
+let rafId = null;
 function sceneLoop() {
+  if (!CW || !CH) resizeCanvas();   // guard against iOS race on first frame
   const t=(performance.now()-sceneStartTime)/1000;
   ctx.clearRect(0,0,CW,CH);
   if(sceneType==='urban') drawUrban(t);
   else if(sceneType==='road') drawRoad(t);
   else drawMedical(t);
   renderParticles();
-  requestAnimationFrame(sceneLoop);
+  rafId = requestAnimationFrame(sceneLoop);
 }
 sceneLoop();
+// Resume loop when app comes back to foreground (iOS suspends rAF in background)
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && !rafId) { sceneStartTime = performance.now(); sceneLoop(); }
+});
 
 // ═══════════════════════════════════════════════════════════
 //  AUDIO  (Web Audio API)
@@ -684,7 +703,13 @@ aci.addEventListener('keydown',e=>{ if(e.key==='Enter') doUnlock(); });
 let currentScenarioIndex=-1;
 function pickRandom(excl){ if(SCENARIOS.length<=1) return 0; let i; do{ i=Math.floor(Math.random()*SCENARIOS.length); }while(i===excl); return i; }
 function currentScenario(){ return SCENARIOS[currentScenarioIndex]; }
-function detectSceneType(sc){ const t=(sc.title||'').toLowerCase(); if(['cardiac','chemical','medical','triage','poison','心臟','化學','醫療','神經','毒','燒'].some(k=>t.includes(k))) return 'medical'; if(['mva','vehicle','fall','evacuation','accident','collision','車','墜','疏散','公路','交通'].some(k=>t.includes(k))) return 'road'; return 'urban'; }
+function detectSceneType(sc){
+  const t=(sc.title||sc.situation||'').toLowerCase();
+  if(['cardiac','chemical','medical','triage','poison','心臟','化學','醫療','神經','毒','燒'].some(k=>t.includes(k))) return 'medical';
+  if(['mva','vehicle','fall','evacuation','accident','collision','車','墜','疏散','公路','交通'].some(k=>t.includes(k))) return 'road';
+  // Everything else (combat, blast, shrapnel, etc.) → urban battle scene
+  return 'urban';
+}
 
 function setScenario(idx){
   currentScenarioIndex=idx;
