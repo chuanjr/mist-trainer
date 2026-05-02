@@ -585,12 +585,19 @@ function renderParticles() {
 
 let rafId = null;
 function sceneLoop() {
-  if (!CW || !CH) resizeCanvas();   // guard against iOS race on first frame
+  if (!CW || !CH) resizeCanvas();
   const t=(performance.now()-sceneStartTime)/1000;
   ctx.clearRect(0,0,CW,CH);
-  if(sceneType==='urban') drawUrban(t);
-  else if(sceneType==='road') drawRoad(t);
-  else drawMedical(t);
+  // Wrap each draw call in save/restore so a bad state (leftover clip,
+  // transform, shadow) from one scene can never bleed into the next.
+  // try-catch ensures an exception never kills the rAF loop.
+  ctx.save();
+  try {
+    if(sceneType==='urban') drawUrban(t);
+    else if(sceneType==='road') drawRoad(t);
+    else drawMedical(t);
+  } catch(e) { /* keep looping even if one frame throws */ }
+  ctx.restore();
   renderParticles();
   rafId = requestAnimationFrame(sceneLoop);
 }
@@ -663,7 +670,14 @@ const tabCodeBtn=document.getElementById('tab-code-btn'), tabManualBtn=document.
 
 function showTab(t){ if(t==='code'){ panelCode.classList.remove('hidden'); panelManual.classList.add('hidden'); tabCodeBtn.classList.add('active'); tabManualBtn.classList.remove('active'); }else{ panelManual.classList.remove('hidden'); panelCode.classList.add('hidden'); tabManualBtn.classList.add('active'); tabCodeBtn.classList.remove('active'); } }
 tabCodeBtn.addEventListener('click',()=>showTab('code')); tabManualBtn.addEventListener('click',()=>showTab('manual'));
-function openSettings(){ apiKeyInput.value=apiKey; groqKeyInput.value=groqKey; if(apiKey&&groqKey) showTab('manual'); else showTab('code'); settingsOverlay.classList.remove('hidden'); }
+function openSettings(){
+  apiKeyInput.value=apiKey; groqKeyInput.value=groqKey;
+  // Pre-fill saved access code so user doesn't have to retype
+  const aci=document.getElementById('access-code-input');
+  if(aci) aci.value=localStorage.getItem(ACS)||'';
+  if(apiKey&&groqKey) showTab('manual'); else showTab('code');
+  settingsOverlay.classList.remove('hidden');
+}
 function closeSettings(){ settingsOverlay.classList.add('hidden'); }
 
 async function initKeys(){
@@ -717,7 +731,7 @@ function setScenario(idx){
   document.getElementById('scenario-title').textContent=sc.title;
   const bd=document.getElementById('badge-difficulty'); bd.textContent=ip?'高壓模式':'標準模式'; bd.className='pill-badge '+(ip?'pressure':'standard');
   document.getElementById('badge-time').textContent=`${sc.timeLimitSec}秒限制`;
-  sceneType=detectSceneType(sc); sceneParticles=[];
+  sceneType=detectSceneType(sc)||'urban'; sceneParticles=[]; sceneStartTime=performance.now();
   resetUI();
 }
 
