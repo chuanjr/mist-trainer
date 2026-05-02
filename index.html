@@ -11,368 +11,396 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg:       rgba(10, 12, 28, 0.7);
-      --surface:  rgba(8, 10, 24, 0.82);
-      --border:   rgba(255,255,255,0.1);
-      --text:     #e8eaf0;
-      --muted:    rgba(255,255,255,0.5);
-      --accent:   #4f46e5;
-      --accent2:  #ec4899;
-      --accent3:  #f59e0b;
-      --danger:   #ef4444;
-      --warn:     #f59e0b;
-      --success:  #10b981;
-      --pressure-bg:     rgba(60, 10, 10, 0.55);
-      --pressure-border: rgba(239, 68, 68, 0.35);
+      --accent:  #4f46e5;
+      --accent2: #ec4899;
+      --danger:  #ef4444;
+      --warn:    #f59e0b;
+      --success: #10b981;
+      --text:    #e8eaf0;
+      --muted:   rgba(255,255,255,0.5);
+      --border:  rgba(255,255,255,0.1);
+      --glass:   rgba(6,8,20,0.72);
     }
 
     html, body {
-      font-family: "Noto Sans TC", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      width: 100%; height: 100%; overflow: hidden;
       background: #020408;
+      font-family: "Noto Sans TC", -apple-system, sans-serif;
       color: var(--text);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 0 0 40px;
     }
 
-    /* ── Full-screen canvas scene ── */
+    /* ── Canvas scene (pointer-events off so buttons work) ── */
     #bg-canvas {
-      position: fixed;
-      inset: 0;
-      z-index: 0;
-      width: 100%;
-      height: 100%;
+      position: fixed; inset: 0; z-index: 0;
+      pointer-events: none;           /* ← critical fix */
     }
     #bg-vignette {
-      position: fixed;
-      inset: 0;
-      z-index: 1;
-      pointer-events: none;
+      position: fixed; inset: 0; z-index: 1; pointer-events: none;
       background:
-        radial-gradient(ellipse 100% 40% at 50% 115%, rgba(0,0,0,0.92) 0%, transparent 70%),
-        radial-gradient(ellipse 100% 35% at 50% 0%,   rgba(0,0,0,0.6)  0%, transparent 80%);
+        radial-gradient(ellipse 100% 42% at 50% 115%, rgba(0,0,0,0.94) 0%, transparent 70%),
+        radial-gradient(ellipse 80%  28% at 50%   0%, rgba(0,0,0,0.55) 0%, transparent 80%);
     }
 
-    /* Everything above canvas */
-    header, main, #ios-warning, #settings-overlay { position: relative; z-index: 5; }
-
-    /* ── iOS Safari warning ── */
-    #ios-warning {
-      width: 100%;
-      max-width: 640px;
-      background: rgba(120, 80, 0, 0.6);
-      backdrop-filter: blur(12px);
-      border: 1px solid rgba(245,158,11,0.4);
-      border-radius: 12px;
-      padding: 10px 14px;
-      font-size: 0.82rem;
-      color: #fde68a;
-      margin: 8px auto;
+    /* ══════════════════════════════════════════
+       MAIN UI LAYER  (fixed overlay, like prototype)
+    ══════════════════════════════════════════ */
+    #ui {
+      position: fixed; inset: 0; z-index: 10;
+      display: flex; flex-direction: column;
+      pointer-events: none;   /* children opt-in individually */
     }
 
-    /* ── Settings overlay ── */
-    #settings-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.7);
-      backdrop-filter: blur(8px);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 100;
-      padding: 16px;
+    /* ── Top bar ── */
+    #topbar {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      padding: env(safe-area-inset-top, 16px) 18px 0;
+      padding-top: max(env(safe-area-inset-top, 0px), 16px);
+      pointer-events: auto;
     }
-    #settings-overlay.hidden { display: none; }
 
-    .settings-box {
-      background: rgba(10,12,28,0.95);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 32px 28px;
-      width: 100%;
-      max-width: 420px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    #scenario-pill {
+      background: var(--glass); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--border); border-radius: 14px; padding: 10px 16px;
+      max-width: 72vw; cursor: pointer; transition: background .2s;
     }
-    .settings-box h2 { font-size: 1.1rem; margin-bottom: 20px; color: var(--text); font-weight: 700; }
-    .settings-box label { font-size: 0.82rem; color: var(--muted); display: block; margin-bottom: 6px; font-weight: 500; }
-    .settings-box input[type="password"] {
-      width: 100%; background: rgba(255,255,255,0.06); border: 1px solid var(--border);
-      color: var(--text); padding: 10px 14px; border-radius: 10px; font-size: 0.9rem;
-      margin-bottom: 8px; font-family: monospace; transition: border-color 0.2s;
-    }
-    .settings-box input[type="password"]:focus { outline: none; border-color: var(--accent); }
-
-    .settings-noise-row {
-      display: flex; align-items: center; gap: 10px; margin: 16px 0;
-      padding: 12px 14px; background: rgba(255,255,255,0.05);
-      border-radius: 10px; border: 1px solid var(--border);
-    }
-    .settings-noise-row label { margin: 0; font-size: 0.88rem; color: var(--text); font-weight: 500; cursor: pointer; }
-    #noise-toggle { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; flex-shrink: 0; }
-
-    .settings-hint { font-size: 0.75rem; color: var(--muted); margin-bottom: 20px; line-height: 1.6; }
-    .settings-hint a { color: var(--accent); }
-
-    .settings-tabs {
-      display: flex; gap: 6px; margin-bottom: 24px;
-      background: rgba(255,255,255,0.06); border-radius: 10px; padding: 4px;
-    }
-    .tab-btn {
-      flex: 1; border: none; background: transparent; color: var(--muted);
-      font-family: inherit; font-size: 0.85rem; font-weight: 600;
-      padding: 8px 12px; border-radius: 8px; cursor: pointer; transition: all 0.2s;
-    }
-    .tab-btn.active { background: rgba(255,255,255,0.1); color: #a5b4fc; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
-    .settings-panel { display: block; }
-    .settings-panel.hidden { display: none !important; }
-
-    #unlock-status { font-size: 0.82rem; font-weight: 600; min-height: 20px; margin-bottom: 12px; text-align: center; }
-    #unlock-status.ok  { color: var(--success); }
-    #unlock-status.err { color: var(--danger); }
-
-    /* ── Header ── */
-    header {
-      width: 100%;
-      background: rgba(10, 8, 35, 0.75);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border-bottom: 1px solid rgba(255,255,255,0.08);
-      padding: 20px 20px 16px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-    }
-    header > div { flex: 1; }
-    h1 { font-size: 1.2rem; font-weight: 700; letter-spacing: 0.04em; color: #fff; }
-    .subtitle { font-size: 0.72rem; color: rgba(255,255,255,0.55); margin-top: 3px; letter-spacing: 0.02em; }
+    #scenario-pill:hover { background: rgba(255,255,255,0.08); }
+    .pill-label  { font-size: .6rem; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; font-weight: 600; margin-bottom: 3px; }
+    .pill-title  { font-size: .82rem; color: #fff; font-weight: 700; line-height: 1.35; }
+    .pill-badges { display: flex; gap: 5px; margin-top: 6px; flex-wrap: wrap; }
+    .pill-badge  { font-size: .62rem; font-weight: 700; padding: 2px 8px; border-radius: 20px; border: 1px solid; }
+    .pill-badge.pressure { border-color: var(--danger);  color: var(--danger); }
+    .pill-badge.standard { border-color: var(--border);  color: var(--muted); }
+    .pill-badge.time     { border-color: var(--warn);    color: var(--warn); }
 
     #gear-btn {
-      background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15);
-      color: rgba(255,255,255,0.75); padding: 8px 12px; border-radius: 10px;
-      cursor: pointer; font-size: 1.1rem; line-height: 1; transition: background 0.2s;
+      background: var(--glass); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border); color: var(--muted);
+      width: 40px; height: 40px; border-radius: 12px; cursor: pointer; font-size: 1.1rem;
+      display: flex; align-items: center; justify-content: center; transition: background .2s;
     }
-    #gear-btn:hover { background: rgba(255,255,255,0.18); }
+    #gear-btn:hover { background: rgba(255,255,255,0.12); color: #fff; }
 
-    /* ── Main layout ── */
-    main {
-      width: 100%; max-width: 640px; padding: 0 16px;
-      display: flex; flex-direction: column; gap: 16px;
-    }
+    /* ── Spacer ── */
+    #spacer { flex: 1; }
 
-    .card {
-      background: var(--surface);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 20px;
-      box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+    /* ── Bottom panel ── */
+    #bottom-panel {
+      padding: 0 16px;
+      padding-bottom: max(env(safe-area-inset-bottom, 0px), 24px);
+      display: flex; flex-direction: column; gap: 10px;
+      pointer-events: auto;
     }
 
-    /* ── Scenario card ── */
-    #scenario-card.pressure-mode {
-      background: var(--pressure-bg);
-      border-color: var(--pressure-border);
-    }
-    .scenario-section-label {
-      font-size: 0.7rem; font-weight: 600; color: var(--muted);
-      text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 10px;
-    }
-    #scenario-title { font-size: 1.1rem; font-weight: 700; color: var(--text); margin-bottom: 10px; line-height: 1.4; }
-    .scenario-emoji { font-size: 1.6rem; margin-bottom: 6px; display: block; }
-    .scenario-meta { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; align-items: center; }
-
-    .badge {
-      font-size: 0.72rem; font-weight: 600; padding: 4px 10px;
-      border-radius: 20px; border: 1.5px solid rgba(255,255,255,0.15);
-      color: var(--muted); background: rgba(255,255,255,0.06);
-    }
-    .badge.pressure { border-color: var(--danger); color: var(--danger); background: rgba(239,68,68,0.1); }
-    .badge.time { border-color: var(--accent); color: #a5b4fc; background: rgba(99,102,241,0.12); }
-
-    #random-btn {
-      display: inline-flex; align-items: center; gap: 6px;
-      background: rgba(99,102,241,0.15); border: 1.5px solid rgba(99,102,241,0.4);
-      color: #a5b4fc; padding: 8px 16px; border-radius: 12px;
-      font-size: 0.88rem; font-weight: 600; cursor: pointer; transition: all 0.2s; font-family: inherit;
-    }
-    #random-btn:hover { background: rgba(99,102,241,0.3); color: #fff; }
-
-    /* ── MIST guide ── */
-    #mist-guide {
-      font-size: 0.78rem; display: grid;
-      grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 14px;
-    }
-    .mist-letter {
-      background: rgba(255,255,255,0.05); border: 1.5px solid rgba(255,255,255,0.1);
-      border-radius: 12px; padding: 10px 6px; text-align: center;
-      font-size: 0.7rem; color: var(--muted); line-height: 1.4;
-    }
-    .mist-letter span { display: block; font-size: 1.3rem; font-weight: 800; margin-bottom: 4px; }
-    .mist-letter:nth-child(1) span { color: #818cf8; }
-    .mist-letter:nth-child(2) span { color: #f472b6; }
-    .mist-letter:nth-child(3) span { color: #fbbf24; }
-    .mist-letter:nth-child(4) span { color: #34d399; }
-
-    /* ── Record card ── */
-    #record-card { text-align: center; transition: box-shadow 0.3s, border-color 0.3s; }
-    #record-card.recording-active {
-      border-color: rgba(239,68,68,0.5);
-      box-shadow: 0 0 0 3px rgba(239,68,68,0.15), 0 4px 24px rgba(0,0,0,0.4);
-      animation: recordingPulse 1.5s ease-in-out infinite;
-    }
-    @keyframes recordingPulse {
-      0%,100% { box-shadow: 0 0 0 3px rgba(239,68,68,0.15), 0 4px 24px rgba(0,0,0,0.4); }
-      50%      { box-shadow: 0 0 0 6px rgba(239,68,68,0.25), 0 4px 28px rgba(239,68,68,0.15); }
-    }
-
-    #timer-ring {
-      position: relative; display: inline-flex;
-      align-items: center; justify-content: center;
-      width: 130px; height: 130px; margin-bottom: 16px;
-    }
-    #timer-svg { position: absolute; top: 0; left: 0; transform: rotate(-90deg); }
-    #timer-circle {
-      fill: none; stroke: #818cf8; stroke-width: 5; stroke-linecap: round;
-      stroke-dasharray: 339.29; stroke-dashoffset: 0; transition: stroke 0.3s;
-    }
-    #timer-circle.pressure { stroke: var(--danger); }
-    #timer-display {
-      font-size: 2.1rem; font-weight: 700; font-variant-numeric: tabular-nums;
-      letter-spacing: -0.02em; color: var(--text);
-    }
-    #timer-display.over { color: var(--danger); }
-
-    .timer-pulse-icon { display: none; font-size: 1rem; animation: heartPulse 0.8s ease-in-out infinite; margin-left: 4px; }
-    .timer-pulse-icon.visible { display: inline; }
-    @keyframes heartPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.3); } }
-
-    #record-btn {
-      width: 100%; padding: 16px; border-radius: 14px; border: none;
-      font-size: 1.05rem; font-weight: 700; cursor: pointer;
-      background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
-      color: #fff; transition: all 0.2s;
-      box-shadow: 0 4px 20px rgba(79,70,229,0.4); font-family: inherit;
-    }
-    #record-btn:hover { opacity: 0.9; transform: translateY(-1px); }
-    #record-btn:active { transform: translateY(0); }
-    #record-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
-    #record-btn.recording {
-      background: linear-gradient(135deg, var(--danger) 0%, #dc2626 100%);
-      box-shadow: 0 4px 20px rgba(239,68,68,0.45);
-    }
-
+    /* Interim / low-confidence text */
     #interim-text {
-      min-height: 52px; margin-top: 12px; font-size: 0.85rem; color: var(--muted);
-      line-height: 1.6; text-align: left; font-style: italic;
-      background: rgba(255,255,255,0.05); border-radius: 10px;
-      padding: 10px 12px; border: 1px solid var(--border);
+      background: var(--glass); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border); border-radius: 12px;
+      padding: 10px 14px; font-size: .82rem; color: rgba(255,255,255,.8);
+      line-height: 1.6; font-style: italic; display: none;
     }
+    #interim-text.visible { display: block; }
     #low-confidence-warning {
-      margin-top: 10px; font-size: 0.78rem; color: #fcd34d;
-      background: rgba(180,120,0,0.2); border: 1px solid rgba(245,158,11,0.4);
-      border-radius: 8px; padding: 8px 12px; text-align: left;
+      background: rgba(120,80,0,.45); border: 1px solid rgba(245,158,11,.4);
+      border-radius: 10px; padding: 8px 12px; font-size: .78rem; color: #fcd34d;
     }
 
-    #text-fallback { display: none; margin-top: 14px; }
+    /* Text fallback textarea */
+    #text-fallback { display: none; flex-direction: column; gap: 8px; }
     #text-fallback p {
-      font-size: 0.8rem; color: #fcd34d;
-      background: rgba(120,80,0,0.3); border: 1px solid rgba(245,158,11,0.4);
-      border-radius: 8px; padding: 8px 12px; margin-bottom: 10px;
+      font-size: .8rem; color: #fcd34d;
+      background: rgba(120,80,0,.35); border: 1px solid rgba(245,158,11,.4);
+      border-radius: 10px; padding: 8px 12px;
     }
     #text-fallback textarea {
-      width: 100%; background: rgba(255,255,255,0.06); border: 1.5px solid var(--border);
-      color: var(--text); padding: 10px 14px; border-radius: 10px;
-      font-size: 0.85rem; min-height: 90px; resize: vertical; font-family: inherit; margin-bottom: 10px;
+      background: var(--glass); border: 1px solid var(--border); color: var(--text);
+      padding: 10px 14px; border-radius: 12px; font-size: .85rem;
+      min-height: 90px; resize: vertical; font-family: inherit;
     }
     #text-fallback textarea:focus { outline: none; border-color: var(--accent); }
 
-    /* ── Error banner ── */
+    /* Error banner */
     #error-banner {
-      background: rgba(80,10,10,0.7); backdrop-filter: blur(12px);
-      border: 1.5px solid rgba(239,68,68,0.4); border-radius: 12px;
-      padding: 12px 16px; font-size: 0.84rem; color: #fca5a5;
-      display: flex; justify-content: space-between; align-items: center; gap: 12px;
+      background: rgba(80,10,10,.75); backdrop-filter: blur(12px);
+      border: 1px solid rgba(239,68,68,.4); border-radius: 12px;
+      padding: 11px 14px; font-size: .84rem; color: #fca5a5;
+      display: flex; justify-content: space-between; align-items: center; gap: 10px;
     }
     #error-banner button {
-      background: none; border: 1.5px solid rgba(239,68,68,0.5); color: #fca5a5;
-      padding: 5px 12px; border-radius: 8px; font-size: 0.8rem; cursor: pointer;
-      white-space: nowrap; font-family: inherit; font-weight: 600;
+      background: none; border: 1px solid rgba(239,68,68,.5); color: #fca5a5;
+      padding: 5px 12px; border-radius: 8px; font-size: .8rem;
+      cursor: pointer; font-family: inherit; font-weight: 600; white-space: nowrap;
     }
 
-    /* ── Loading ── */
-    #loading-card { text-align: center; color: var(--muted); font-size: 0.9rem; }
-    .spinner {
-      display: inline-block; width: 20px; height: 20px;
-      border: 2.5px solid rgba(255,255,255,0.1); border-top-color: var(--accent);
-      border-radius: 50%; animation: spin 0.8s linear infinite;
-      margin-right: 8px; vertical-align: middle;
+    /* MIST compact chips */
+    #mist-guide { display: flex; gap: 6px; }
+    .mist-chip {
+      flex: 1; background: var(--glass); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+      border: 1px solid var(--border); border-radius: 10px; padding: 8px 2px; text-align: center;
     }
+    .mc-letter { font-size: 1.05rem; font-weight: 800; display: block; line-height: 1; }
+    .mc-label  { font-size: .55rem; color: var(--muted); display: block; margin-top: 3px; font-weight: 600; }
+    .mist-chip:nth-child(1) .mc-letter { color: #818cf8; }
+    .mist-chip:nth-child(2) .mc-letter { color: #f472b6; }
+    .mist-chip:nth-child(3) .mc-letter { color: #fbbf24; }
+    .mist-chip:nth-child(4) .mc-letter { color: #34d399; }
+
+    /* Record row */
+    #record-row { display: flex; align-items: center; gap: 10px; }
+
+    /* Timer ring */
+    #timer-wrap {
+      position: relative; flex-shrink: 0; width: 64px; height: 64px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    #timer-svg { position: absolute; top: 0; left: 0; transform: rotate(-90deg); }
+    #timer-circle {
+      fill: none; stroke: #818cf8; stroke-width: 3.5; stroke-linecap: round;
+      stroke-dasharray: 163.36; stroke-dashoffset: 0; transition: stroke .3s;
+    }
+    #timer-circle.pressure { stroke: var(--danger); }
+    #timer-display {
+      font-size: 1.1rem; font-weight: 800; font-variant-numeric: tabular-nums;
+      color: #fff; text-shadow: 0 0 12px rgba(99,102,241,.7); line-height: 1;
+    }
+    #timer-display.over { color: var(--danger); text-shadow: 0 0 12px rgba(239,68,68,.7); }
+
+    .timer-pulse-icon { display: none; font-size: .85rem; animation: heartPulse .8s ease-in-out infinite; }
+    .timer-pulse-icon.visible { display: inline; }
+    @keyframes heartPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.35)} }
+
+    /* Big record button */
+    #record-btn {
+      flex: 1; height: 64px; border: 1px solid rgba(255,255,255,.15); border-radius: 18px;
+      background: linear-gradient(135deg, rgba(79,70,229,.9), rgba(236,72,153,.9));
+      backdrop-filter: blur(8px); color: #fff; font-size: 1rem; font-weight: 700;
+      font-family: inherit; cursor: pointer; display: flex; align-items: center;
+      justify-content: center; gap: 8px; transition: all .2s;
+      box-shadow: 0 4px 20px rgba(79,70,229,.4);
+    }
+    #record-btn:hover:not(:disabled) { opacity: .9; transform: translateY(-1px); }
+    #record-btn:disabled { opacity: .4; cursor: not-allowed; }
+    #record-btn.recording {
+      background: linear-gradient(135deg, rgba(239,68,68,.95), rgba(220,38,38,.95));
+      box-shadow: 0 0 0 0 rgba(239,68,68,.5);
+      animation: recPulse 1.2s ease-in-out infinite;
+    }
+    @keyframes recPulse {
+      0%,100%{ box-shadow: 0 4px 20px rgba(239,68,68,.5); }
+      50%    { box-shadow: 0 4px 32px rgba(239,68,68,.85); }
+    }
+
+    /* Random + submit-text buttons */
+    #random-btn, #submit-text-btn-row {
+      flex-shrink: 0; width: 64px; height: 64px;
+      background: var(--glass); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--border); border-radius: 18px;
+      color: var(--muted); font-size: 1.4rem; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; transition: all .2s;
+    }
+    #random-btn:hover { background: rgba(255,255,255,.1); color: #fff; }
+
+    /* iOS warning strip */
+    #ios-warning {
+      background: rgba(120,80,0,.5); backdrop-filter: blur(12px);
+      border: 1px solid rgba(245,158,11,.35); border-radius: 10px;
+      padding: 8px 12px; font-size: .78rem; color: #fde68a;
+    }
+
+    /* ══════════════════════════════════════════
+       SETTINGS OVERLAY
+    ══════════════════════════════════════════ */
+    #settings-overlay {
+      position: fixed; inset: 0; z-index: 100;
+      background: rgba(0,0,0,.72); backdrop-filter: blur(8px);
+      display: flex; align-items: center; justify-content: center; padding: 16px;
+    }
+    #settings-overlay.hidden { display: none; }
+    .settings-box {
+      background: rgba(8,10,24,.97); border: 1px solid var(--border); border-radius: 20px;
+      padding: 28px 24px; width: 100%; max-width: 420px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.6);
+    }
+    .settings-box h2 { font-size: 1.1rem; margin-bottom: 18px; font-weight: 700; }
+    .settings-box label { font-size: .82rem; color: var(--muted); display: block; margin-bottom: 6px; font-weight: 500; }
+    .settings-box input[type="password"] {
+      width: 100%; background: rgba(255,255,255,.06); border: 1px solid var(--border);
+      color: var(--text); padding: 10px 14px; border-radius: 10px;
+      font-size: .9rem; margin-bottom: 8px; font-family: monospace;
+    }
+    .settings-box input[type="password"]:focus { outline: none; border-color: var(--accent); }
+    .settings-noise-row {
+      display: flex; align-items: center; gap: 10px; margin: 14px 0;
+      padding: 11px 14px; background: rgba(255,255,255,.05);
+      border-radius: 10px; border: 1px solid var(--border);
+    }
+    .settings-noise-row label { margin: 0; font-size: .88rem; color: var(--text); font-weight: 500; cursor: pointer; }
+    #noise-toggle { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; flex-shrink: 0; }
+    .settings-hint { font-size: .75rem; color: var(--muted); margin-bottom: 18px; line-height: 1.6; }
+    .settings-hint a { color: #818cf8; }
+    .settings-tabs {
+      display: flex; gap: 6px; margin-bottom: 22px;
+      background: rgba(255,255,255,.06); border-radius: 10px; padding: 4px;
+    }
+    .tab-btn {
+      flex: 1; border: none; background: transparent; color: var(--muted); font-family: inherit;
+      font-size: .85rem; font-weight: 600; padding: 8px 12px; border-radius: 8px; cursor: pointer; transition: all .2s;
+    }
+    .tab-btn.active { background: rgba(255,255,255,.1); color: #a5b4fc; }
+    .settings-panel.hidden { display: none !important; }
+    #unlock-status { font-size: .82rem; font-weight: 600; min-height: 20px; margin-bottom: 12px; text-align: center; }
+    #unlock-status.ok  { color: var(--success); }
+    #unlock-status.err { color: var(--danger); }
+    button.primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff; border: none; padding: 12px 20px; border-radius: 12px;
+      font-size: .95rem; font-weight: 700; cursor: pointer; width: 100%;
+      font-family: inherit; box-shadow: 0 4px 14px rgba(79,70,229,.35); transition: opacity .2s;
+    }
+    button.primary:hover { opacity: .9; }
+
+    /* ══════════════════════════════════════════
+       LOADING OVERLAY
+    ══════════════════════════════════════════ */
+    #loading-overlay {
+      position: fixed; inset: 0; z-index: 30;
+      background: rgba(0,0,0,.55); backdrop-filter: blur(4px);
+      display: none; align-items: center; justify-content: center; flex-direction: column; gap: 14px;
+    }
+    #loading-overlay.visible { display: flex; }
+    .spinner {
+      width: 48px; height: 48px; border-radius: 50%;
+      border: 3px solid rgba(255,255,255,.1); border-top-color: var(--accent);
+      animation: spin .8s linear infinite;
+    }
+    #loading-overlay p { font-size: .9rem; color: var(--muted); }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ── Results ── */
-    #results-card h2 { font-size: 1rem; color: var(--text); margin-bottom: 16px; font-weight: 700; }
-    .score-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
-    .score-box { border-radius: 12px; padding: 14px; border: 1.5px solid transparent; }
-    .score-box.good { background: rgba(16,185,129,0.15); border-color: rgba(16,185,129,0.4); }
-    .score-box.warn { background: rgba(245,158,11,0.15); border-color: rgba(245,158,11,0.4); }
-    .score-box.bad  { background: rgba(239,68,68,0.15);  border-color: rgba(239,68,68,0.4);  }
-    .score-box .label {
-      font-size: 0.7rem; color: rgba(255,255,255,0.6); margin-bottom: 6px;
-      text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600;
+    /* ══════════════════════════════════════════
+       RESULTS BOTTOM SHEET
+    ══════════════════════════════════════════ */
+    #results-overlay {
+      position: fixed; inset: 0; z-index: 20;
+      display: none; align-items: flex-end; justify-content: center;
     }
-    .score-box .value { font-size: 1.5rem; font-weight: 800; color: var(--text); }
+    #results-overlay.visible { display: flex; }
+    #results-overlay::before {
+      content: ''; position: absolute; inset: 0;
+      background: rgba(0,0,0,.65); backdrop-filter: blur(6px);
+    }
+    #results-sheet {
+      position: relative; background: rgba(5,7,18,.97);
+      border: 1px solid var(--border); border-radius: 24px 24px 0 0;
+      padding: 20px 18px 36px; width: 100%; max-width: 520px;
+      max-height: 88vh; overflow-y: auto;
+      /* drag handle */
+    }
+    #results-sheet::before {
+      content: ''; display: block; width: 40px; height: 4px;
+      background: rgba(255,255,255,.18); border-radius: 2px; margin: 0 auto 18px;
+    }
+    #results-sheet h2 { font-size: 1rem; font-weight: 700; margin-bottom: 16px; }
 
-    .section-label {
-      font-size: 0.72rem; color: var(--muted); margin: 16px 0 8px;
-      text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600;
-    }
-    .gaps-list { list-style: none; display: flex; flex-direction: column; gap: 5px; }
+    .score-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-bottom: 14px; }
+    .score-box { border-radius: 12px; padding: 11px 4px; text-align: center; border: 1px solid; }
+    .score-box.good { background: rgba(16,185,129,.15); border-color: rgba(16,185,129,.4); }
+    .score-box.warn { background: rgba(245,158,11,.15); border-color: rgba(245,158,11,.4); }
+    .score-box.bad  { background: rgba(239,68,68,.15);  border-color: rgba(239,68,68,.4);  }
+    .score-box .label { font-size: .6rem; color: rgba(255,255,255,.55); text-transform: uppercase; letter-spacing: .06em; font-weight: 600; margin-bottom: 4px; }
+    .score-box .value { font-size: 1.15rem; font-weight: 800; }
+
+    .section-label { font-size: .68rem; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; font-weight: 600; margin: 14px 0 6px; }
+    .gaps-list { list-style: none; display: flex; flex-direction: column; gap: 4px; }
     .gaps-list li {
-      font-size: 0.83rem; padding: 8px 12px;
-      background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.35);
+      font-size: .8rem; padding: 7px 10px;
+      background: rgba(245,158,11,.12); border: 1px solid rgba(245,158,11,.3);
       border-radius: 8px; color: #fcd34d;
     }
-    .gaps-list li::before { content: "→ "; color: var(--warn); font-weight: 700; }
+    .gaps-list li::before { content: "→ "; font-weight: 700; }
     .model-answer {
-      background: rgba(99,102,241,0.12); border: 1.5px solid rgba(99,102,241,0.3);
-      border-left: 4px solid var(--accent); border-radius: 10px; padding: 14px;
-      font-size: 0.85rem; line-height: 1.7; white-space: pre-wrap; color: rgba(255,255,255,0.85);
+      background: rgba(99,102,241,.12); border: 1px solid rgba(99,102,241,.3);
+      border-left: 3px solid var(--accent); border-radius: 10px;
+      padding: 12px; font-size: .8rem; line-height: 1.7; white-space: pre-wrap; color: rgba(255,255,255,.85);
     }
     #try-again-btn {
-      width: 100%; padding: 13px; border-radius: 12px;
-      border: 1.5px solid rgba(99,102,241,0.4); background: rgba(99,102,241,0.12);
-      color: #a5b4fc; font-size: 0.95rem; font-weight: 700; cursor: pointer;
-      margin-top: 18px; transition: all 0.2s; font-family: inherit;
+      width: 100%; margin-top: 14px; padding: 13px; border-radius: 14px;
+      border: 1px solid rgba(99,102,241,.4); background: rgba(99,102,241,.15);
+      color: #a5b4fc; font-size: .95rem; font-weight: 700; cursor: pointer; font-family: inherit; transition: all .2s;
     }
-    #try-again-btn:hover { background: rgba(99,102,241,0.28); color: #fff; }
+    #try-again-btn:hover { background: rgba(99,102,241,.3); color: #fff; }
 
     .hidden { display: none !important; }
-    button.primary {
-      background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
-      color: #fff; border: none; padding: 12px 20px; border-radius: 12px;
-      font-size: 0.95rem; font-weight: 700; cursor: pointer;
-      width: 100%; font-family: inherit; box-shadow: 0 4px 14px rgba(79,70,229,0.35);
-      transition: opacity 0.2s;
-    }
-    button.primary:hover { opacity: 0.9; }
   </style>
 </head>
 <body>
 
-<!-- Full-screen canvas scene -->
+<!-- ── Scene ── -->
 <canvas id="bg-canvas"></canvas>
 <div id="bg-vignette"></div>
 
-<!-- iOS Safari warning -->
-<div id="ios-warning" class="hidden">
-  在 iPhone 上建議使用 <strong>Chrome</strong> 瀏覽器，Safari 可能會中斷錄音。
+<!-- ══ Main UI (fixed overlay, prototype layout) ══ -->
+<div id="ui">
+  <!-- Top -->
+  <div id="topbar">
+    <div id="scenario-pill" title="點擊換情境">
+      <div class="pill-label">當前情境</div>
+      <div class="pill-title" id="scenario-title">載入情境中…</div>
+      <div class="pill-badges">
+        <span class="pill-badge" id="badge-difficulty"></span>
+        <span class="pill-badge time"  id="badge-time"></span>
+      </div>
+    </div>
+    <button id="gear-btn" title="設定">⚙</button>
+  </div>
+
+  <div id="spacer"></div>
+
+  <!-- Bottom -->
+  <div id="bottom-panel">
+    <div id="ios-warning" class="hidden">
+      在 iPhone 上建議使用 <strong>Chrome</strong>，Safari 可能會中斷錄音。
+    </div>
+
+    <div id="interim-text"></div>
+    <div id="low-confidence-warning" class="hidden">⚠ 辨識信心偏低，請確認文字</div>
+
+    <div id="text-fallback">
+      <p>⚠ 語音辨識無法使用，請直接輸入：</p>
+      <textarea id="fallback-textarea" placeholder="在此輸入 MIST 報告..."></textarea>
+      <button class="primary" id="submit-text-btn">送出評估</button>
+    </div>
+
+    <div id="error-banner" class="hidden">
+      <span id="error-msg"></span>
+      <button id="retry-btn">再試一次</button>
+    </div>
+
+    <!-- MIST guide chips -->
+    <div id="mist-guide">
+      <div class="mist-chip"><span class="mc-letter">M</span><span class="mc-label">致傷機轉</span></div>
+      <div class="mist-chip"><span class="mc-letter">I</span><span class="mc-label">受傷情況</span></div>
+      <div class="mist-chip"><span class="mc-letter">S</span><span class="mc-label">生命徵象</span></div>
+      <div class="mist-chip"><span class="mc-letter">T</span><span class="mc-label">已施處置</span></div>
+    </div>
+
+    <!-- Record row -->
+    <div id="record-row">
+      <div id="timer-wrap">
+        <svg id="timer-svg" width="64" height="64" viewBox="0 0 64 64">
+          <circle cx="32" cy="32" r="26" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="3.5"/>
+          <circle id="timer-circle" cx="32" cy="32" r="26"/>
+        </svg>
+        <div style="text-align:center;">
+          <span id="timer-display">—</span>
+          <span class="timer-pulse-icon" id="pulse-icon">💓</span>
+        </div>
+      </div>
+      <button id="record-btn">⏺ 開始錄音</button>
+      <button id="random-btn" title="換情境">🎲</button>
+    </div>
+  </div>
 </div>
 
-<!-- Settings overlay -->
+<!-- ══ Settings overlay ══ -->
 <div id="settings-overlay">
   <div class="settings-box">
     <h2>⚙️ 設定</h2>
@@ -382,97 +410,45 @@
     </div>
     <div class="settings-panel" id="panel-code">
       <label for="access-code-input">通行碼</label>
-      <input type="password" id="access-code-input" placeholder="輸入通行碼..." autocomplete="off" spellcheck="false">
+      <input type="password" id="access-code-input" placeholder="輸入通行碼…" autocomplete="off" spellcheck="false">
       <p class="settings-hint">輸入通行碼可自動載入金鑰，無需自行申請 API 帳號。</p>
       <div id="unlock-status"></div>
       <button class="primary" id="unlock-btn">解鎖</button>
     </div>
     <div class="settings-panel hidden" id="panel-manual">
       <label for="api-key-input">Anthropic API 金鑰（AI 評分）</label>
-      <input type="password" id="api-key-input" placeholder="sk-ant-..." autocomplete="off" spellcheck="false">
-      <p class="settings-hint">請至 <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> 取得金鑰。</p>
+      <input type="password" id="api-key-input" placeholder="sk-ant-…" autocomplete="off" spellcheck="false">
+      <p class="settings-hint">請至 <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> 取得。</p>
       <label for="groq-key-input">Groq API 金鑰（語音辨識）</label>
-      <input type="password" id="groq-key-input" placeholder="gsk_..." autocomplete="off" spellcheck="false">
-      <p class="settings-hint">免費使用，請至 <a href="https://console.groq.com" target="_blank">console.groq.com</a> 取得金鑰。<br>金鑰僅儲存於本裝置，不會傳送至任何其他伺服器。</p>
+      <input type="password" id="groq-key-input" placeholder="gsk_…" autocomplete="off" spellcheck="false">
+      <p class="settings-hint">免費，請至 <a href="https://console.groq.com" target="_blank">console.groq.com</a> 取得。金鑰只存在本裝置。</p>
       <button class="primary" id="save-key-btn">儲存並開始</button>
     </div>
-    <div class="settings-noise-row" style="margin-top:16px;">
+    <div class="settings-noise-row">
       <input type="checkbox" id="noise-toggle" checked>
       <label for="noise-toggle">啟用背景音效（沉浸式體驗）</label>
     </div>
   </div>
 </div>
 
-<header>
-  <div>
-    <h1>MIST 戰傷報告訓練</h1>
-    <p class="subtitle">致傷機轉 · 受傷情況 · 生命徵象 · 已施處置</p>
-  </div>
-  <button id="gear-btn" title="設定">⚙</button>
-</header>
+<!-- ══ Loading ══ -->
+<div id="loading-overlay">
+  <div class="spinner"></div>
+  <p>AI 評估中…</p>
+</div>
 
-<main>
-  <!-- Scenario picker card -->
-  <div class="card" id="scenario-card">
-    <div class="scenario-section-label">選擇情境</div>
-    <span class="scenario-emoji" id="scenario-emoji">🎯</span>
-    <div id="scenario-title">載入情境中…</div>
-    <div class="scenario-meta">
-      <span class="badge" id="badge-difficulty"></span>
-      <span class="badge time" id="badge-time"></span>
-    </div>
-    <button id="random-btn">🎲 換一個情境</button>
-    <div id="mist-guide">
-      <div class="mist-letter"><span>M</span>致傷機轉</div>
-      <div class="mist-letter"><span>I</span>受傷情況</div>
-      <div class="mist-letter"><span>S</span>生命徵象</div>
-      <div class="mist-letter"><span>T</span>已施處置</div>
-    </div>
-  </div>
-
-  <!-- Record -->
-  <div class="card" id="record-card">
-    <div id="timer-ring">
-      <svg id="timer-svg" width="130" height="130" viewBox="0 0 130 130">
-        <circle cx="65" cy="65" r="54" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="5"/>
-        <circle id="timer-circle" cx="65" cy="65" r="54"/>
-      </svg>
-      <div>
-        <span id="timer-display">—</span><span class="timer-pulse-icon" id="pulse-icon">💓</span>
-      </div>
-    </div>
-    <button id="record-btn">⏺ 開始錄音</button>
-    <div id="interim-text"></div>
-    <div id="low-confidence-warning" hidden>⚠ 辨識信心偏低，請確認文字後再送出</div>
-    <div id="text-fallback">
-      <p>⚠ 語音辨識無法使用，請直接輸入報告內容：</p>
-      <textarea id="fallback-textarea" placeholder="在此輸入 MIST 報告..."></textarea>
-      <button class="primary" id="submit-text-btn">送出評估</button>
-    </div>
-  </div>
-
-  <!-- Error banner -->
-  <div id="error-banner" class="hidden">
-    <span id="error-msg"></span>
-    <button id="retry-btn">再試一次</button>
-  </div>
-
-  <!-- Loading -->
-  <div class="card hidden" id="loading-card">
-    <span class="spinner"></span> AI 評估中…
-  </div>
-
-  <!-- Results -->
-  <div class="card hidden" id="results-card">
+<!-- ══ Results bottom sheet ══ -->
+<div id="results-overlay">
+  <div id="results-sheet">
     <h2>🏆 訓練結果</h2>
     <div class="score-grid">
       <div class="score-box" id="box-completeness"><div class="label">完整度</div><div class="value" id="r-completeness"></div></div>
-      <div class="score-box" id="box-precision"><div class="label">精確度</div><div class="value" id="r-precision"></div></div>
-      <div class="score-box" id="box-fluency"><div class="label">流暢度</div><div class="value" id="r-fluency"></div></div>
-      <div class="score-box" id="box-structure"><div class="label">報告順序</div><div class="value" id="r-structure"></div></div>
+      <div class="score-box" id="box-precision">   <div class="label">精確度</div><div class="value" id="r-precision"></div></div>
+      <div class="score-box" id="box-fluency">     <div class="label">流暢度</div><div class="value" id="r-fluency"></div></div>
+      <div class="score-box" id="box-structure">   <div class="label">報告順序</div><div class="value" id="r-structure"></div></div>
     </div>
     <div id="hedges-section" class="hidden">
-      <div class="section-label">模糊用語提示</div>
+      <div class="section-label">模糊用語</div>
       <ul class="gaps-list" id="r-hedges"></ul>
     </div>
     <div id="gaps-section" class="hidden">
@@ -483,896 +459,340 @@
     <div class="model-answer" id="r-model-answer"></div>
     <button id="try-again-btn">↩ 再練一次</button>
   </div>
-</main>
+</div>
 
 <script src="scenarios.js"></script>
 <script src="evaluator.js"></script>
 <script src="speech.js"></script>
 <script>
 // ═══════════════════════════════════════════════════════════
-// CANVAS SCENE ENGINE
+//  CANVAS SCENE ENGINE
 // ═══════════════════════════════════════════════════════════
 const bgCanvas = document.getElementById('bg-canvas');
 const ctx = bgCanvas.getContext('2d');
 let CW, CH;
-
-function resizeCanvas() {
-  CW = bgCanvas.width  = window.innerWidth;
-  CH = bgCanvas.height = window.innerHeight;
-}
-resizeCanvas();
-window.addEventListener('resize', resizeCanvas);
+function resizeCanvas() { CW = bgCanvas.width = window.innerWidth; CH = bgCanvas.height = window.innerHeight; }
+resizeCanvas(); window.addEventListener('resize', resizeCanvas);
 
 let sceneType = 'urban';
 let sceneParticles = [];
-let sceneAnimId = null;
 let sceneStartTime = performance.now();
-
-// ── Rain drops (persistent) ────────────────────────────────
-const rainDrops = Array.from({ length: 200 }, () => ({
-  x: Math.random() * 800, y: Math.random() * 900,
-  speed: 9 + Math.random() * 7, len: 12 + Math.random() * 10,
-  alpha: 0.15 + Math.random() * 0.35,
-}));
-
-// ── ECG phase ─────────────────────────────────────────────
+const rainDrops = Array.from({length:200}, () => ({ x:Math.random()*800, y:Math.random()*900, speed:9+Math.random()*7, len:12+Math.random()*10, alpha:.15+Math.random()*.35 }));
 let ecgPhase = 0;
 
-// ── Particle helpers ───────────────────────────────────────
-function spawnParticle(cfg) { sceneParticles.push({ ...cfg, life: 1 }); }
+function spawnParticle(cfg) { sceneParticles.push({...cfg, life:1}); }
 
-// ── Fire draw ──────────────────────────────────────────────
 function drawFire(x, y, size, t, color) {
-  for (let i = 0; i < 6; i++) {
-    const ph = t * 2.2 + i * 1.05;
-    const sw = 0.85 + 0.15 * Math.sin(ph);
-    const ox = Math.sin(ph * 1.3) * size * 0.28;
-    const h  = size * (0.75 + 0.45 * Math.sin(ph * 0.7));
-    const alpha = (0.45 + 0.35 * Math.abs(Math.sin(ph))).toFixed(2);
-    const g = ctx.createRadialGradient(x + ox, y, 0, x + ox, y - h * 0.6, h * sw);
-    g.addColorStop(0,   `rgba(255,240,100,${alpha})`);
-    g.addColorStop(0.3,  color + Math.floor(parseFloat(alpha) * 0xff).toString(16).padStart(2, '0'));
-    g.addColorStop(0.7,  color + '44');
-    g.addColorStop(1,   'transparent');
-    ctx.fillStyle = g;
-    ctx.fillRect(x - h * 1.2, y - h * 1.6, h * 2.4, h * 1.6);
+  for (let i=0;i<6;i++) {
+    const ph=t*2.2+i*1.05, sw=.85+.15*Math.sin(ph);
+    const ox=Math.sin(ph*1.3)*size*.28, h=size*(.75+.45*Math.sin(ph*.7));
+    const al=(0.45+0.35*Math.abs(Math.sin(ph))).toFixed(2);
+    const g=ctx.createRadialGradient(x+ox,y,0,x+ox,y-h*.6,h*sw);
+    g.addColorStop(0,`rgba(255,240,100,${al})`);
+    g.addColorStop(.3,color+Math.floor(parseFloat(al)*255).toString(16).padStart(2,'0'));
+    g.addColorStop(.7,color+'44'); g.addColorStop(1,'transparent');
+    ctx.fillStyle=g; ctx.fillRect(x-h*1.2,y-h*1.6,h*2.4,h*1.6);
   }
 }
 
-// ── URBAN scene ────────────────────────────────────────────
-const URBAN_FIRES = [
-  { x: .13, y: .52, r: 70, color: '#ff4400' },
-  { x: .50, y: .46, r: 52, color: '#ff6600' },
-  { x: .80, y: .55, r: 46, color: '#ff3300' },
-  { x: .32, y: .63, r: 28, color: '#ff5500' },
-];
+const URBAN_FIRES=[{x:.13,y:.52,r:70,c:'#ff4400'},{x:.50,y:.46,r:52,c:'#ff6600'},{x:.80,y:.55,r:46,c:'#ff3300'},{x:.32,y:.63,r:28,c:'#ff5500'}];
+const ECG=[0,0,.1,0,.15,-.7,.2,1,.25,0,.5,0,.55,-.4,.6,.6,.65,0,.9,0,1,0];
 
 function drawUrban(t) {
-  // Sky
-  const sky = ctx.createLinearGradient(0, 0, 0, CH);
-  sky.addColorStop(0,   '#020409');
-  sky.addColorStop(0.5, '#060918');
-  sky.addColorStop(1,   '#0a1228');
-  ctx.fillStyle = sky;
-  ctx.fillRect(0, 0, CW, CH);
-
-  // Fire glow (behind buildings)
-  URBAN_FIRES.forEach(f => {
-    const flk = 0.8 + 0.2 * Math.sin(t * 2.5 + f.x * 9);
-    const g = ctx.createRadialGradient(f.x * CW, f.y * CH, 0, f.x * CW, f.y * CH, f.r * flk * 3.5);
-    g.addColorStop(0, f.color + 'cc');
-    g.addColorStop(0.35, f.color + '55');
-    g.addColorStop(1, 'transparent');
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, CW, CH);
+  const sky=ctx.createLinearGradient(0,0,0,CH);
+  sky.addColorStop(0,'#020409'); sky.addColorStop(.5,'#060918'); sky.addColorStop(1,'#0a1228');
+  ctx.fillStyle=sky; ctx.fillRect(0,0,CW,CH);
+  URBAN_FIRES.forEach(f=>{ const fl=.8+.2*Math.sin(t*2.5+f.x*9),g=ctx.createRadialGradient(f.x*CW,f.y*CH,0,f.x*CW,f.y*CH,f.r*fl*3.5); g.addColorStop(0,f.c+'cc'); g.addColorStop(.35,f.c+'55'); g.addColorStop(1,'transparent'); ctx.fillStyle=g; ctx.fillRect(0,0,CW,CH); });
+  const hz=ctx.createLinearGradient(0,CH*.3,0,CH*.75); hz.addColorStop(0,'transparent'); hz.addColorStop(.5,`rgba(55,18,5,${.07+.03*Math.sin(t*.4)})`); hz.addColorStop(1,'transparent'); ctx.fillStyle=hz; ctx.fillRect(0,0,CW,CH);
+  ctx.fillStyle='#020408';
+  [[0,.42,55,.58],[60,.48,45,.52],[110,.38,65,.62],[180,.44,50,.56],[235,.35,75,.65],[315,.42,55,.58],[375,.36,80,.64],[460,.44,60,.56],[525,.40,65,.60],[595,.43,55,.57],[655,.37,70,.63],[730,.41,70,.59]].forEach(([xr,yr,wr,hr])=>ctx.fillRect(xr/800*CW,yr*CH,wr/800*CW,hr*CH));
+  ctx.fillStyle='#010206';
+  [[0,.30,85,.70],[90,.24,100,.76],[195,.28,80,.72],[280,.18,120,.82],[405,.25,90,.75],[500,.20,115,.80],[620,.26,180,.74]].forEach(([xr,yr,wr,hr],i)=>{
+    ctx.fillRect(xr/800*CW,yr*CH,wr/800*CW,hr*CH);
+    if(i%2===0) ctx.fillRect((xr+wr*.5-1)/800*CW,(yr-.04)*CH,2/800*CW,.04*CH);
   });
-
-  // Atmospheric haze
-  const haze = ctx.createLinearGradient(0, CH * 0.3, 0, CH * 0.75);
-  haze.addColorStop(0, 'transparent');
-  haze.addColorStop(0.5, `rgba(55,18,5,${0.07 + 0.03 * Math.sin(t * 0.4)})`);
-  haze.addColorStop(1, 'transparent');
-  ctx.fillStyle = haze;
-  ctx.fillRect(0, 0, CW, CH);
-
-  // Far buildings
-  ctx.fillStyle = '#020408';
-  [[0,.42,55,.58],[60,.48,45,.52],[110,.38,65,.62],[180,.44,50,.56],
-   [235,.35,75,.65],[315,.42,55,.58],[375,.36,80,.64],[460,.44,60,.56],
-   [525,.40,65,.60],[595,.43,55,.57],[655,.37,70,.63],[730,.41,70,.59]
-  ].forEach(([xr, yr, wr, hr]) =>
-    ctx.fillRect(xr / 800 * CW, yr * CH, wr / 800 * CW, hr * CH)
-  );
-
-  // Mid buildings
-  ctx.fillStyle = '#010206';
-  const midB = [
-    [0,.30,85,.70],[90,.24,100,.76],[195,.28,80,.72],
-    [280,.18,120,.82],[405,.25,90,.75],[500,.20,115,.80],[620,.26,180,.74],
-  ];
-  midB.forEach(([xr, yr, wr, hr], i) => {
-    ctx.fillRect(xr / 800 * CW, yr * CH, wr / 800 * CW, hr * CH);
-    if (i % 2 === 0)
-      ctx.fillRect((xr + wr * 0.5 - 1) / 800 * CW, (yr - 0.04) * CH, 2 / 800 * CW, 0.04 * CH);
-    if (i === 2 || i === 5) {
-      const tx = (xr + wr * 0.7) / 800 * CW, ty = yr * CH;
-      ctx.fillRect(tx - 5, ty - 12, 10, 12);
-      ctx.beginPath(); ctx.arc(tx, ty - 12, 6, Math.PI, Math.PI * 2); ctx.fill();
-    }
+  [[30,.35],[55,.42],[95,.28],[130,.34],[200,.32],[215,.40],[295,.22],[310,.30],[320,.38],[430,.28],[450,.35],[415,.43],[520,.24],[540,.33],[555,.41],[640,.30],[665,.38],[720,.28],[740,.36],[760,.44],[780,.32]].forEach(([xr,yr],i)=>{
+    if(Math.sin(t*.4+i*2.1)>0.5+0.4*Math.sin(t*7+i*3.3)){ ctx.fillStyle=`rgba(255,200,80,${0.4+0.4*Math.abs(Math.sin(t*1.5+i))})`; ctx.fillRect(xr/800*CW,yr*CH,7/800*CW,5/800*CW); }
   });
-
-  // Flickering windows
-  [[30,.35],[55,.42],[95,.28],[130,.34],[200,.32],[215,.40],[295,.22],
-   [310,.30],[320,.38],[430,.28],[450,.35],[415,.43],[520,.24],[540,.33],
-   [555,.41],[640,.30],[665,.38],[720,.28],[740,.36],[760,.44],[780,.32]
-  ].forEach(([xr, yr], i) => {
-    const on = Math.sin(t * 0.4 + i * 2.1) > 0.5 + 0.4 * Math.sin(t * 7 + i * 3.3);
-    if (on) {
-      ctx.fillStyle = `rgba(255,200,80,${0.4 + 0.4 * Math.abs(Math.sin(t * 1.5 + i))})`;
-      ctx.fillRect(xr / 800 * CW, yr * CH, 7 / 800 * CW, 5 / 800 * CW);
-    }
-  });
-
-  // Foreground walls
-  ctx.fillStyle = '#00000a';
-  ctx.beginPath();
-  ctx.moveTo(0, CH); ctx.lineTo(0, CH * 0.52);
-  ctx.lineTo(0.04*CW,CH*.48); ctx.lineTo(0.07*CW,CH*.50); ctx.lineTo(0.09*CW,CH*.45);
-  ctx.lineTo(0.11*CW,CH*.47); ctx.lineTo(0.13*CW,CH*.60); ctx.lineTo(0.13*CW,CH);
-  ctx.closePath(); ctx.fill();
-  ctx.beginPath();
-  ctx.moveTo(CW, CH); ctx.lineTo(CW, CH * 0.50);
-  ctx.lineTo(.88*CW,CH*.46); ctx.lineTo(.86*CW,CH*.50); ctx.lineTo(.83*CW,CH*.44);
-  ctx.lineTo(.80*CW,CH*.49); ctx.lineTo(.80*CW,CH); ctx.closePath(); ctx.fill();
-
-  // Ground rubble
-  const gY = 0.80 * CH;
-  ctx.fillStyle = '#000008';
-  ctx.beginPath(); ctx.moveTo(0, CH); ctx.lineTo(0, gY);
-  [0,0,60,18,120,8,180,22,240,12,300,20,360,10,420,25,480,14,540,19,600,8,660,16,720,22,780,11,800,0]
-    .reduce((_, v, i, a) => { if (i % 2 === 0) ctx.lineTo(a[i]/800*CW, gY-a[i+1]*.5); }, null);
-  ctx.lineTo(CW, CH); ctx.closePath(); ctx.fill();
-
-  // Fire light on ground
-  URBAN_FIRES.forEach(f => {
-    const flk = 0.7 + 0.3 * Math.sin(t * 2.7 + f.x * 8);
-    const g = ctx.createRadialGradient(f.x*CW, CH, 0, f.x*CW, CH*.6, CH*.55);
-    g.addColorStop(0, `rgba(200,80,10,${0.12 * flk})`);
-    g.addColorStop(1, 'transparent');
-    ctx.fillStyle = g; ctx.fillRect(0, 0, CW, CH);
-  });
-
-  // Flame shapes
-  URBAN_FIRES.forEach(f => drawFire(f.x*CW, f.y*CH, f.r, t, f.color));
-
-  // Occasional muzzle flash
-  if (Math.sin(t * 7.3) * Math.sin(t * 11.1) > 0.88) {
-    const mx = (0.2 + Math.random() * 0.6) * CW;
-    const my = (0.44 + Math.random() * 0.15) * CH;
-    const g = ctx.createRadialGradient(mx, my, 0, mx, my, 22);
-    g.addColorStop(0, 'rgba(255,255,200,0.85)');
-    g.addColorStop(0.3, 'rgba(255,150,0,0.4)');
-    g.addColorStop(1, 'transparent');
-    ctx.fillStyle = g; ctx.fillRect(0, 0, CW, CH);
-    ctx.strokeStyle = 'rgba(255,240,150,0.65)';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.moveTo(mx, my);
-    ctx.lineTo(mx + (Math.random() - 0.5) * 110, my + (Math.random() - 0.2) * 55);
-    ctx.stroke();
-  }
-
-  // Embers
-  if (Math.random() < 0.35) {
-    const f = URBAN_FIRES[Math.floor(Math.random() * URBAN_FIRES.length)];
-    spawnParticle({
-      x: f.x*CW + (Math.random()-0.5)*28, y: f.y*CH,
-      vx: (Math.random()-0.5)*1.4, vy: -(1.2+Math.random()*3),
-      size: 1+Math.random()*2.5, decay: 0.004+Math.random()*0.008,
-      color: Math.random()>.5?'#ff8800':'#ffcc00', type:'ember',
-    });
-  }
+  ctx.fillStyle='#00000a';
+  ctx.beginPath(); ctx.moveTo(0,CH); ctx.lineTo(0,CH*.52); ctx.lineTo(.04*CW,CH*.48); ctx.lineTo(.07*CW,CH*.50); ctx.lineTo(.09*CW,CH*.45); ctx.lineTo(.11*CW,CH*.47); ctx.lineTo(.13*CW,CH*.60); ctx.lineTo(.13*CW,CH); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(CW,CH); ctx.lineTo(CW,CH*.50); ctx.lineTo(.88*CW,CH*.46); ctx.lineTo(.86*CW,CH*.50); ctx.lineTo(.83*CW,CH*.44); ctx.lineTo(.80*CW,CH*.49); ctx.lineTo(.80*CW,CH); ctx.closePath(); ctx.fill();
+  const gY=.80*CH; ctx.fillStyle='#000008'; ctx.beginPath(); ctx.moveTo(0,CH); ctx.lineTo(0,gY);
+  [0,0,60,18,120,8,180,22,240,12,300,20,360,10,420,25,480,14,540,19,600,8,660,16,720,22,780,11,800,0].reduce((_,v,i,a)=>{ if(i%2===0) ctx.lineTo(a[i]/800*CW,gY-a[i+1]*.5); },null);
+  ctx.lineTo(CW,CH); ctx.closePath(); ctx.fill();
+  URBAN_FIRES.forEach(f=>{ const fl=.7+.3*Math.sin(t*2.7+f.x*8),g=ctx.createRadialGradient(f.x*CW,CH,0,f.x*CW,CH*.6,CH*.55); g.addColorStop(0,`rgba(200,80,10,${.12*fl})`); g.addColorStop(1,'transparent'); ctx.fillStyle=g; ctx.fillRect(0,0,CW,CH); });
+  URBAN_FIRES.forEach(f=>drawFire(f.x*CW,f.y*CH,f.r,t,f.c));
+  if(Math.sin(t*7.3)*Math.sin(t*11.1)>.88){ const mx=(.2+Math.random()*.6)*CW,my=(.44+Math.random()*.15)*CH,g=ctx.createRadialGradient(mx,my,0,mx,my,22); g.addColorStop(0,'rgba(255,255,200,.85)'); g.addColorStop(.3,'rgba(255,150,0,.4)'); g.addColorStop(1,'transparent'); ctx.fillStyle=g; ctx.fillRect(0,0,CW,CH); ctx.strokeStyle='rgba(255,240,150,.65)'; ctx.lineWidth=1.5; ctx.beginPath(); ctx.moveTo(mx,my); ctx.lineTo(mx+(Math.random()-.5)*110,my+(Math.random()-.2)*55); ctx.stroke(); }
+  if(Math.random()<.35){ const f=URBAN_FIRES[Math.floor(Math.random()*4)]; spawnParticle({x:f.x*CW+(Math.random()-.5)*28,y:f.y*CH,vx:(Math.random()-.5)*1.4,vy:-(1.2+Math.random()*3),size:1+Math.random()*2.5,decay:.004+Math.random()*.008,color:Math.random()>.5?'#ff8800':'#ffcc00',type:'ember'}); }
 }
 
-// ── ROAD scene ─────────────────────────────────────────────
 function drawRoad(t) {
-  const sky = ctx.createLinearGradient(0, 0, 0, CH);
-  sky.addColorStop(0, '#010810'); sky.addColorStop(0.6, '#03101c'); sky.addColorStop(1, '#060f1a');
-  ctx.fillStyle = sky; ctx.fillRect(0, 0, CW, CH);
-
-  const redOn = Math.sin(t * 4) > 0;
-  const col = redOn ? 'rgba(220,30,30,0.2)' : 'rgba(30,80,220,0.2)';
-  const g = ctx.createRadialGradient(CW*.5, CH*.3, 0, CW*.5, CH*.3, CW*.55);
-  g.addColorStop(0, col); g.addColorStop(1, 'transparent');
-  ctx.fillStyle = g; ctx.fillRect(0, 0, CW, CH);
-
-  // Road
-  const roadTop = CH * 0.58;
-  ctx.fillStyle = '#0e1420'; ctx.fillRect(0, roadTop, CW, CH - roadTop);
-  // Wet reflection
-  const rg = ctx.createLinearGradient(0, roadTop, 0, CH);
-  rg.addColorStop(0, 'rgba(255,255,255,0.03)'); rg.addColorStop(1, 'transparent');
-  ctx.fillStyle = rg; ctx.fillRect(0, roadTop, CW, CH - roadTop);
-  // Emergency light on road
-  const elCol = redOn ? 'rgba(200,30,30,0.14)' : 'rgba(30,60,200,0.14)';
-  const eg = ctx.createRadialGradient(CW*.5, CH*.65, 0, CW*.5, CH*.65, CW*.3);
-  eg.addColorStop(0, elCol); eg.addColorStop(1, 'transparent');
-  ctx.fillStyle = eg; ctx.fillRect(0, roadTop, CW, CH - roadTop);
-
-  // Lane markings
-  ctx.fillStyle = 'rgba(180,140,20,0.35)';
-  for (let i = 0; i < 8; i++) ctx.fillRect(i * CW / 7, CH * 0.7, CW / 14, 3);
-  ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.lineWidth = 1.5; ctx.setLineDash([20,14]);
-  ctx.beginPath(); ctx.moveTo(0, CH*.78); ctx.lineTo(CW, CH*.78); ctx.stroke();
-  ctx.setLineDash([]);
-
-  // Background buildings
-  ctx.fillStyle = '#020610';
-  [[0,.45,120,.55],[130,.50,90,.50],[225,.42,110,.58],[340,.48,100,.52],
-   [445,.44,130,.56],[580,.47,110,.53],[695,.43,105,.57]
-  ].forEach(([xr, yr, wr, hr]) =>
-    ctx.fillRect(xr/800*CW, yr*CH, wr/800*CW, hr*CH)
-  );
-
-  // Crashed car
-  const cx = CW * 0.35;
-  ctx.fillStyle = '#1a1f2e';
-  ctx.beginPath(); ctx.roundRect(cx-68, roadTop-22, 136, 28, 6); ctx.fill();
-  ctx.beginPath(); ctx.roundRect(cx-48, roadTop-36, 86, 16, 4); ctx.fill();
-  ctx.fillStyle = '#111622';
-  ctx.beginPath(); ctx.moveTo(cx-68,roadTop-22); ctx.lineTo(cx-88,roadTop-10); ctx.lineTo(cx-68,roadTop+6); ctx.closePath(); ctx.fill();
-  [cx-44, cx+34].forEach(wx => {
-    ctx.fillStyle = '#050810'; ctx.beginPath(); ctx.arc(wx, roadTop+8, 11, 0, Math.PI*2); ctx.fill();
-    ctx.fillStyle = '#14192a'; ctx.beginPath(); ctx.arc(wx, roadTop+8, 5, 0, Math.PI*2); ctx.fill();
-  });
-  // Steam
-  for (let i = 0; i < 3; i++) {
-    const sg = ctx.createRadialGradient(cx-82, roadTop-5+i*6, 0, cx-82, roadTop-5+i*6, 20+i*5);
-    sg.addColorStop(0, 'rgba(200,200,200,0.07)'); sg.addColorStop(1, 'transparent');
-    ctx.fillStyle = sg; ctx.fillRect(0, 0, CW, CH);
-  }
-
-  // Ambulance
-  const ax = CW * 0.62;
-  ctx.fillStyle = '#7f1d1d';
-  ctx.beginPath(); ctx.roundRect(ax-55, roadTop-30, 110, 34, 5); ctx.fill();
-  ctx.beginPath(); ctx.roundRect(ax-35, roadTop-44, 65, 16, 4); ctx.fill();
-  ctx.fillStyle = 'rgba(255,255,255,0.85)';
-  ctx.fillRect(ax-2, roadTop-38, 4, 14); ctx.fillRect(ax-7, roadTop-33, 14, 4);
-  [ax-32, ax+32].forEach(wx => {
-    ctx.fillStyle = '#050810'; ctx.beginPath(); ctx.arc(wx, roadTop+6, 10, 0, Math.PI*2); ctx.fill();
-    ctx.fillStyle = '#14192a'; ctx.beginPath(); ctx.arc(wx, roadTop+6, 4, 0, Math.PI*2); ctx.fill();
-  });
-  // Strobe lights
-  ctx.fillStyle = `rgba(239,68,68,${redOn?0.95:0.1})`;
-  ctx.beginPath(); ctx.roundRect(ax-28, roadTop-48, 20, 7, 3); ctx.fill();
-  ctx.fillStyle = `rgba(59,130,246,${redOn?0.1:0.95})`;
-  ctx.beginPath(); ctx.roundRect(ax+8, roadTop-48, 20, 7, 3); ctx.fill();
-
-  // Police tape barrier
-  ctx.strokeStyle = 'rgba(255,200,0,0.5)'; ctx.lineWidth = 2; ctx.setLineDash([8,4]);
-  ctx.beginPath(); ctx.moveTo(0.04*CW, roadTop+30); ctx.lineTo(0.26*CW, roadTop+30); ctx.stroke();
-  ctx.setLineDash([]);
-
-  // Rain
-  ctx.lineWidth = 1;
-  rainDrops.forEach(d => {
-    ctx.globalAlpha = d.alpha;
-    ctx.strokeStyle = 'rgba(160,190,255,0.5)';
-    ctx.beginPath();
-    ctx.moveTo(d.x/800*CW, d.y/900*CH);
-    ctx.lineTo(d.x/800*CW - 1, (d.y+d.len)/900*CH);
-    ctx.stroke();
-    d.y += d.speed;
-    if (d.y > 900) { d.y = -10; d.x = Math.random() * 800; }
-  });
-  ctx.globalAlpha = 1;
-
-  if (Math.random() < 0.25) {
-    spawnParticle({
-      x: Math.random()*CW, y: CH*(0.62+Math.random()*.35),
-      vx: (Math.random()-.5)*2, vy: -1.2-Math.random(),
-      size: 1.5, decay: 0.05, color: 'rgba(160,190,255,0.5)', type: 'splash',
-    });
-  }
+  const sky=ctx.createLinearGradient(0,0,0,CH); sky.addColorStop(0,'#010810'); sky.addColorStop(.6,'#03101c'); sky.addColorStop(1,'#060f1a'); ctx.fillStyle=sky; ctx.fillRect(0,0,CW,CH);
+  const redOn=Math.sin(t*4)>0,col=redOn?'rgba(220,30,30,.2)':'rgba(30,80,220,.2)'; const g=ctx.createRadialGradient(CW*.5,CH*.3,0,CW*.5,CH*.3,CW*.55); g.addColorStop(0,col); g.addColorStop(1,'transparent'); ctx.fillStyle=g; ctx.fillRect(0,0,CW,CH);
+  const rT=CH*.58; ctx.fillStyle='#0e1420'; ctx.fillRect(0,rT,CW,CH-rT);
+  const rg=ctx.createLinearGradient(0,rT,0,CH); rg.addColorStop(0,'rgba(255,255,255,.03)'); rg.addColorStop(1,'transparent'); ctx.fillStyle=rg; ctx.fillRect(0,rT,CW,CH-rT);
+  const eg=ctx.createRadialGradient(CW*.5,CH*.65,0,CW*.5,CH*.65,CW*.3); eg.addColorStop(0,redOn?'rgba(200,30,30,.14)':'rgba(30,60,200,.14)'); eg.addColorStop(1,'transparent'); ctx.fillStyle=eg; ctx.fillRect(0,rT,CW,CH-rT);
+  ctx.fillStyle='rgba(180,140,20,.35)'; for(let i=0;i<8;i++) ctx.fillRect(i*CW/7,CH*.7,CW/14,3);
+  ctx.strokeStyle='rgba(255,255,255,.12)'; ctx.lineWidth=1.5; ctx.setLineDash([20,14]); ctx.beginPath(); ctx.moveTo(0,CH*.78); ctx.lineTo(CW,CH*.78); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle='#020610'; [[0,.45,120,.55],[130,.50,90,.50],[225,.42,110,.58],[340,.48,100,.52],[445,.44,130,.56],[580,.47,110,.53],[695,.43,105,.57]].forEach(([xr,yr,wr,hr])=>ctx.fillRect(xr/800*CW,yr*CH,wr/800*CW,hr*CH));
+  const cx=CW*.35; ctx.fillStyle='#1a1f2e'; ctx.beginPath(); ctx.roundRect(cx-68,rT-22,136,28,6); ctx.fill(); ctx.beginPath(); ctx.roundRect(cx-48,rT-36,86,16,4); ctx.fill();
+  ctx.fillStyle='#111622'; ctx.beginPath(); ctx.moveTo(cx-68,rT-22); ctx.lineTo(cx-88,rT-10); ctx.lineTo(cx-68,rT+6); ctx.closePath(); ctx.fill();
+  [cx-44,cx+34].forEach(wx=>{ ctx.fillStyle='#050810'; ctx.beginPath(); ctx.arc(wx,rT+8,11,0,Math.PI*2); ctx.fill(); ctx.fillStyle='#14192a'; ctx.beginPath(); ctx.arc(wx,rT+8,5,0,Math.PI*2); ctx.fill(); });
+  const ax=CW*.62; ctx.fillStyle='#7f1d1d'; ctx.beginPath(); ctx.roundRect(ax-55,rT-30,110,34,5); ctx.fill(); ctx.beginPath(); ctx.roundRect(ax-35,rT-44,65,16,4); ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,.85)'; ctx.fillRect(ax-2,rT-38,4,14); ctx.fillRect(ax-7,rT-33,14,4);
+  [ax-32,ax+32].forEach(wx=>{ ctx.fillStyle='#050810'; ctx.beginPath(); ctx.arc(wx,rT+6,10,0,Math.PI*2); ctx.fill(); ctx.fillStyle='#14192a'; ctx.beginPath(); ctx.arc(wx,rT+6,4,0,Math.PI*2); ctx.fill(); });
+  ctx.fillStyle=`rgba(239,68,68,${redOn?.95:.1})`; ctx.beginPath(); ctx.roundRect(ax-28,rT-48,20,7,3); ctx.fill();
+  ctx.fillStyle=`rgba(59,130,246,${redOn?.1:.95})`; ctx.beginPath(); ctx.roundRect(ax+8,rT-48,20,7,3); ctx.fill();
+  ctx.lineWidth=1; rainDrops.forEach(d=>{ ctx.globalAlpha=d.alpha; ctx.strokeStyle='rgba(160,190,255,.5)'; ctx.beginPath(); ctx.moveTo(d.x/800*CW,d.y/900*CH); ctx.lineTo(d.x/800*CW-1,(d.y+d.len)/900*CH); ctx.stroke(); d.y+=d.speed; if(d.y>900){d.y=-10;d.x=Math.random()*800;} }); ctx.globalAlpha=1;
+  if(Math.random()<.25) spawnParticle({x:Math.random()*CW,y:CH*(.62+Math.random()*.35),vx:(Math.random()-.5)*2,vy:-1.2-Math.random(),size:1.5,decay:.05,color:'rgba(160,190,255,.5)',type:'splash'});
 }
-
-// ── MEDICAL scene ──────────────────────────────────────────
-const ECG_PATH = [0,0, 0.1,0, 0.15,-.7, 0.2,1, 0.25,0, 0.5,0, 0.55,-.4, 0.6,.6, 0.65,0, 0.9,0, 1,0];
 
 function drawMedical(t) {
-  const sky = ctx.createLinearGradient(0, 0, 0, CH);
-  sky.addColorStop(0, '#010508'); sky.addColorStop(0.5, '#02080e'); sky.addColorStop(1, '#04121a');
-  ctx.fillStyle = sky; ctx.fillRect(0, 0, CW, CH);
-
-  // Overhead light
-  const lg = ctx.createRadialGradient(CW*.5, 0, 0, CW*.5, 0, CH*.65);
-  lg.addColorStop(0, 'rgba(180,210,255,0.1)'); lg.addColorStop(0.5, 'rgba(80,140,200,0.03)'); lg.addColorStop(1, 'transparent');
-  ctx.fillStyle = lg; ctx.fillRect(0, 0, CW, CH);
-
-  // Emergency red pulse
-  const ep = 0.4 + 0.3 * Math.sin(t * 1.5);
-  const eg = ctx.createRadialGradient(0, CH*.4, 0, 0, CH*.4, CW*.55);
-  eg.addColorStop(0, `rgba(200,20,20,${ep*.1})`); eg.addColorStop(1, 'transparent');
-  ctx.fillStyle = eg; ctx.fillRect(0, 0, CW, CH);
-
-  // Triage cross
-  const cp = 0.7 + 0.3 * Math.sin(t * 2);
-  const cg = ctx.createRadialGradient(CW*.5, CH*.14, 0, CW*.5, CH*.14, 55);
-  cg.addColorStop(0, `rgba(255,255,255,${cp*.18})`); cg.addColorStop(1, 'transparent');
-  ctx.fillStyle = cg; ctx.fillRect(0, 0, CW, CH);
-  ctx.fillStyle = `rgba(255,255,255,${cp*.88})`;
-  ctx.fillRect(CW*.5-5, CH*.06, 10, 54); ctx.fillRect(CW*.5-27, CH*.14, 54, 10);
-
-  // Shelter silhouette
-  ctx.fillStyle = '#010609';
-  ctx.beginPath();
-  ctx.moveTo(0, CH*.55); ctx.lineTo(CW*.15, CH*.34); ctx.lineTo(CW*.5, CH*.27);
-  ctx.lineTo(CW*.85, CH*.34); ctx.lineTo(CW, CH*.55); ctx.lineTo(CW, CH); ctx.lineTo(0, CH);
-  ctx.closePath(); ctx.fill();
-
-  // IV poles
-  ctx.strokeStyle = 'rgba(40,80,120,0.65)'; ctx.lineWidth = 2;
-  [[.12,.40,.85],[.28,.42,.88],[.72,.42,.88],[.88,.40,.85]].forEach(([xr,ty,by]) => {
-    ctx.beginPath(); ctx.moveTo(xr*CW, ty*CH); ctx.lineTo(xr*CW, by*CH); ctx.stroke();
-    ctx.fillStyle = 'rgba(30,70,110,0.55)';
-    ctx.beginPath(); ctx.roundRect(xr*CW-8, ty*CH, 16, 20, 3); ctx.fill();
-  });
-
-  // Stretchers + patients
-  [[.08,.60,.22],[.38,.62,.22],[.65,.62,.22],[.78,.60,.22]].forEach(([xr,yr,wr]) => {
-    ctx.fillStyle = 'rgba(10,30,50,0.65)';
-    ctx.beginPath(); ctx.roundRect((xr-.01)*CW, yr*CH, wr*CW, CH*.10, 5); ctx.fill();
-    ctx.fillStyle = 'rgba(15,40,60,0.75)';
-    ctx.beginPath(); ctx.arc(xr*CW+wr*.15*CW, yr*CH-8, 11, 0, Math.PI*2); ctx.fill();
-  });
-
-  // Monitor glow
-  [[.22,.44],[.62,.44]].forEach(([xr,yr]) => {
-    const mg = ctx.createRadialGradient(xr*CW, yr*CH, 0, xr*CW, yr*CH, 32);
-    mg.addColorStop(0, 'rgba(20,200,100,0.1)'); mg.addColorStop(1, 'transparent');
-    ctx.fillStyle = mg; ctx.fillRect(0, 0, CW, CH);
-    ctx.fillStyle = 'rgba(5,15,10,0.88)';
-    ctx.beginPath(); ctx.roundRect(xr*CW-20, yr*CH-13, 40, 26, 3); ctx.fill();
-  });
-
-  // ECG line
-  ecgPhase = (ecgPhase + 0.012) % 1;
-  const eX = CW * 0.1, eW = CW * 0.8, eY = CH * 0.73;
-  ctx.save();
-  ctx.beginPath(); ctx.rect(eX, eY - 30, eW, 60); ctx.clip();
-  ctx.strokeStyle = 'rgba(52,211,153,0.82)';
-  ctx.lineWidth = 2.5; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
-  ctx.shadowColor = 'rgba(52,211,153,0.55)'; ctx.shadowBlur = 8;
-  ctx.beginPath();
-  for (let rep = 0; rep < 2; rep++) {
-    for (let i = 0; i < ECG_PATH.length - 2; i += 2) {
-      const x0 = eX + ((ECG_PATH[i]   + rep - ecgPhase + 2) % 2) * eW * 0.5;
-      const y0 = eY + ECG_PATH[i+1] * 26;
-      const x1 = eX + ((ECG_PATH[i+2] + rep - ecgPhase + 2) % 2) * eW * 0.5;
-      const y1 = eY + ECG_PATH[i+3] * 26;
-      if (i === 0 && rep === 0) ctx.moveTo(x0, y0); else ctx.lineTo(x0, y0);
-      ctx.lineTo(x1, y1);
-    }
-  }
-  ctx.stroke(); ctx.shadowBlur = 0; ctx.restore();
-  ctx.strokeStyle = 'rgba(52,211,153,0.12)'; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(eX, eY); ctx.lineTo(eX + eW, eY); ctx.stroke();
-
-  if (Math.random() < 0.12) {
-    spawnParticle({
-      x: Math.random()*CW, y: CH*(0.3+Math.random()*.4),
-      vx: (Math.random()-.5)*.4, vy: -.3-Math.random()*.3,
-      size: 1+Math.random()*2, decay: .003, color: 'rgba(100,180,220,0.35)', type:'dust',
-    });
-  }
+  const sky=ctx.createLinearGradient(0,0,0,CH); sky.addColorStop(0,'#010508'); sky.addColorStop(.5,'#02080e'); sky.addColorStop(1,'#04121a'); ctx.fillStyle=sky; ctx.fillRect(0,0,CW,CH);
+  const lg=ctx.createRadialGradient(CW*.5,0,0,CW*.5,0,CH*.65); lg.addColorStop(0,'rgba(180,210,255,.1)'); lg.addColorStop(.5,'rgba(80,140,200,.03)'); lg.addColorStop(1,'transparent'); ctx.fillStyle=lg; ctx.fillRect(0,0,CW,CH);
+  const ep=.4+.3*Math.sin(t*1.5); const eg=ctx.createRadialGradient(0,CH*.4,0,0,CH*.4,CW*.55); eg.addColorStop(0,`rgba(200,20,20,${ep*.1})`); eg.addColorStop(1,'transparent'); ctx.fillStyle=eg; ctx.fillRect(0,0,CW,CH);
+  const cp=.7+.3*Math.sin(t*2); const cg=ctx.createRadialGradient(CW*.5,CH*.14,0,CW*.5,CH*.14,55); cg.addColorStop(0,`rgba(255,255,255,${cp*.18})`); cg.addColorStop(1,'transparent'); ctx.fillStyle=cg; ctx.fillRect(0,0,CW,CH);
+  ctx.fillStyle=`rgba(255,255,255,${cp*.88})`; ctx.fillRect(CW*.5-5,CH*.06,10,54); ctx.fillRect(CW*.5-27,CH*.14,54,10);
+  ctx.fillStyle='#010609'; ctx.beginPath(); ctx.moveTo(0,CH*.55); ctx.lineTo(CW*.15,CH*.34); ctx.lineTo(CW*.5,CH*.27); ctx.lineTo(CW*.85,CH*.34); ctx.lineTo(CW,CH*.55); ctx.lineTo(CW,CH); ctx.lineTo(0,CH); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle='rgba(40,80,120,.65)'; ctx.lineWidth=2;
+  [[.12,.40,.85],[.28,.42,.88],[.72,.42,.88],[.88,.40,.85]].forEach(([xr,ty,by])=>{ ctx.beginPath(); ctx.moveTo(xr*CW,ty*CH); ctx.lineTo(xr*CW,by*CH); ctx.stroke(); ctx.fillStyle='rgba(30,70,110,.55)'; ctx.beginPath(); ctx.roundRect(xr*CW-8,ty*CH,16,20,3); ctx.fill(); });
+  [[.08,.60,.22],[.38,.62,.22],[.65,.62,.22],[.78,.60,.22]].forEach(([xr,yr,wr])=>{ ctx.fillStyle='rgba(10,30,50,.65)'; ctx.beginPath(); ctx.roundRect((xr-.01)*CW,yr*CH,wr*CW,CH*.10,5); ctx.fill(); ctx.fillStyle='rgba(15,40,60,.75)'; ctx.beginPath(); ctx.arc(xr*CW+wr*.15*CW,yr*CH-8,11,0,Math.PI*2); ctx.fill(); });
+  ecgPhase=(ecgPhase+.012)%1; const eX=CW*.1,eW=CW*.8,eY=CH*.73;
+  ctx.save(); ctx.beginPath(); ctx.rect(eX,eY-30,eW,60); ctx.clip();
+  ctx.strokeStyle='rgba(52,211,153,.82)'; ctx.lineWidth=2.5; ctx.shadowColor='rgba(52,211,153,.55)'; ctx.shadowBlur=8; ctx.lineJoin='round'; ctx.lineCap='round'; ctx.beginPath();
+  for(let rep=0;rep<2;rep++) for(let i=0;i<ECG.length-2;i+=2){ const x0=eX+((ECG[i]+rep-ecgPhase+2)%2)*eW*.5,y0=eY+ECG[i+1]*26,x1=eX+((ECG[i+2]+rep-ecgPhase+2)%2)*eW*.5,y1=eY+ECG[i+3]*26; if(i===0&&rep===0) ctx.moveTo(x0,y0); else ctx.lineTo(x0,y0); ctx.lineTo(x1,y1); }
+  ctx.stroke(); ctx.shadowBlur=0; ctx.restore();
+  if(Math.random()<.12) spawnParticle({x:Math.random()*CW,y:CH*(.3+Math.random()*.4),vx:(Math.random()-.5)*.4,vy:-.3-Math.random()*.3,size:1+Math.random()*2,decay:.003,color:'rgba(100,180,220,.35)',type:'dust'});
 }
 
-// ── Render particles ───────────────────────────────────────
 function renderParticles() {
-  sceneParticles = sceneParticles.filter(p => p.life > 0);
-  sceneParticles.forEach(p => {
-    p.x += p.vx; p.y += p.vy; p.life -= p.decay;
-    if (p.type === 'ember') {
-      p.vx += (Math.random() - 0.5) * 0.08;
-      ctx.globalAlpha = p.life;
-      ctx.fillStyle = p.color;
-      ctx.beginPath(); ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2); ctx.fill();
-      if (p.life > 0.5) {
-        const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 4);
-        g.addColorStop(0, p.color + '88'); g.addColorStop(1, 'transparent');
-        ctx.fillStyle = g; ctx.fillRect(p.x-p.size*4, p.y-p.size*4, p.size*8, p.size*8);
-      }
-    } else if (p.type === 'splash' || p.type === 'dust') {
-      ctx.globalAlpha = p.life * 0.55;
-      ctx.fillStyle = p.color;
-      ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill();
-    }
-    ctx.globalAlpha = 1;
-  });
+  sceneParticles=sceneParticles.filter(p=>p.life>0);
+  sceneParticles.forEach(p=>{ p.x+=p.vx; p.y+=p.vy; p.life-=p.decay; if(p.type==='ember'){ p.vx+=(Math.random()-.5)*.08; ctx.globalAlpha=p.life; ctx.fillStyle=p.color; ctx.beginPath(); ctx.arc(p.x,p.y,p.size*p.life,0,Math.PI*2); ctx.fill(); if(p.life>.5){const g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.size*4); g.addColorStop(0,p.color+'88'); g.addColorStop(1,'transparent'); ctx.fillStyle=g; ctx.fillRect(p.x-p.size*4,p.y-p.size*4,p.size*8,p.size*8);} }else{ ctx.globalAlpha=p.life*.55; ctx.fillStyle=p.color; ctx.beginPath(); ctx.arc(p.x,p.y,p.size,0,Math.PI*2); ctx.fill(); } ctx.globalAlpha=1; });
 }
 
-// ── Main animation loop ────────────────────────────────────
 function sceneLoop() {
-  const t = (performance.now() - sceneStartTime) / 1000;
-  ctx.clearRect(0, 0, CW, CH);
-  if (sceneType === 'urban')   drawUrban(t);
-  else if (sceneType === 'road')    drawRoad(t);
-  else                              drawMedical(t);
+  const t=(performance.now()-sceneStartTime)/1000;
+  ctx.clearRect(0,0,CW,CH);
+  if(sceneType==='urban') drawUrban(t);
+  else if(sceneType==='road') drawRoad(t);
+  else drawMedical(t);
   renderParticles();
-  sceneAnimId = requestAnimationFrame(sceneLoop);
+  requestAnimationFrame(sceneLoop);
 }
 sceneLoop();
 
 // ═══════════════════════════════════════════════════════════
-// SCENE-SPECIFIC AUDIO (Web Audio API — no files needed)
+//  AUDIO  (Web Audio API)
 // ═══════════════════════════════════════════════════════════
-let audioCtx = null;
-let audioNodes = [];    // all running nodes to stop later
-let boomTimer = null;
-let beepTimer = null;
+let audioCtx=null, audioNodes=[], boomTimer=null, beepTimer=null;
+function getAC(){ if(!audioCtx) audioCtx=new AudioContext(); return audioCtx; }
+function stopAllAudio(){ clearTimeout(boomTimer); clearTimeout(beepTimer); audioNodes.forEach(n=>{try{n.stop();}catch(e){}}); audioNodes=[]; }
+function makeNoiseBuf(ac,sec){ const b=ac.createBuffer(1,ac.sampleRate*sec,ac.sampleRate),d=b.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1; return b; }
 
-function getAudioCtx() {
-  if (!audioCtx) audioCtx = new AudioContext();
-  return audioCtx;
+function startUrbanAudio(){
+  const ac=getAC();
+  const src=ac.createBufferSource(); src.buffer=makeNoiseBuf(ac,2); src.loop=true;
+  const lpf=ac.createBiquadFilter(); lpf.type='lowpass'; lpf.frequency.value=90;
+  const g=ac.createGain(); g.gain.value=.12; src.connect(lpf); lpf.connect(g); g.connect(ac.destination); src.start(); audioNodes.push(src);
+  const sub=ac.createOscillator(); sub.type='sine'; sub.frequency.value=42;
+  const sg=ac.createGain(); sg.gain.value=.06; sub.connect(sg); sg.connect(ac.destination); sub.start(); audioNodes.push(sub);
+  function boom(){ const bs=ac.createBufferSource(); bs.buffer=makeNoiseBuf(ac,.8); const lp=ac.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=180; const bg=ac.createGain(),now=ac.currentTime; bg.gain.setValueAtTime(0,now); bg.gain.linearRampToValueAtTime(.45,now+.02); bg.gain.exponentialRampToValueAtTime(.001,now+1.2); bs.connect(lp); lp.connect(bg); bg.connect(ac.destination); bs.start(); const cr=ac.createOscillator(); cr.type='sawtooth'; cr.frequency.value=80; const cg=ac.createGain(); cg.gain.setValueAtTime(.2,now); cg.gain.exponentialRampToValueAtTime(.001,now+.08); cr.connect(cg); cg.connect(ac.destination); cr.start(); cr.stop(now+.1); audioNodes.push(cr); }
+  function sched(){ boomTimer=setTimeout(()=>{ boom(); sched(); },5000+Math.random()*12000); }
+  boomTimer=setTimeout(()=>{ boom(); sched(); },2000+Math.random()*2000);
 }
 
-function stopAllAudio() {
-  clearTimeout(boomTimer);
-  clearTimeout(beepTimer);
-  audioNodes.forEach(n => { try { n.stop(); } catch(e) {} });
-  audioNodes = [];
+function startRoadAudio(){
+  const ac=getAC();
+  const osc=ac.createOscillator(); osc.type='sawtooth'; osc.frequency.value=660;
+  const lfo=ac.createOscillator(); lfo.frequency.value=.85; const lfg=ac.createGain(); lfg.gain.value=100; lfo.connect(lfg); lfg.connect(osc.frequency);
+  const wob=ac.createOscillator(); wob.frequency.value=4.5; wob.type='sine'; const wg=ac.createGain(); wg.gain.value=8; wob.connect(wg); wg.connect(osc.frequency);
+  const g=ac.createGain(); g.gain.value=.055; osc.connect(g); g.connect(ac.destination);
+  lfo.start(); osc.start(); wob.start(); audioNodes.push(osc,lfo,wob);
+  const ns=ac.createBufferSource(); ns.buffer=makeNoiseBuf(ac,2); ns.loop=true;
+  const nlp=ac.createBiquadFilter(); nlp.type='bandpass'; nlp.frequency.value=1200; nlp.Q.value=.5;
+  const ng=ac.createGain(); ng.gain.value=.025; ns.connect(nlp); nlp.connect(ng); ng.connect(ac.destination); ns.start(); audioNodes.push(ns);
 }
 
-function makeNoiseBuffer(ac, sec) {
-  const buf = ac.createBuffer(1, ac.sampleRate * sec, ac.sampleRate);
-  const d = buf.getChannelData(0);
-  for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
-  return buf;
+function startMedicalAudio(){
+  const ac=getAC();
+  const hum=ac.createOscillator(); hum.type='sine'; hum.frequency.value=55;
+  const hg=ac.createGain(); hg.gain.value=.025; hum.connect(hg); hg.connect(ac.destination); hum.start(); audioNodes.push(hum);
+  const ns=ac.createBufferSource(); ns.buffer=makeNoiseBuf(ac,2); ns.loop=true;
+  const nhp=ac.createBiquadFilter(); nhp.type='highpass'; nhp.frequency.value=2000;
+  const ng=ac.createGain(); ng.gain.value=.018; ns.connect(nhp); nhp.connect(ng); ng.connect(ac.destination); ns.start(); audioNodes.push(ns);
+  function beep(){ const o=ac.createOscillator(); o.type='sine'; o.frequency.value=880; const g=ac.createGain(),now=ac.currentTime; g.gain.setValueAtTime(0,now); g.gain.linearRampToValueAtTime(.18,now+.012); g.gain.linearRampToValueAtTime(0,now+.1); o.connect(g); g.connect(ac.destination); o.start(now); o.stop(now+.12); audioNodes.push(o); beepTimer=setTimeout(beep,760+Math.random()*80); }
+  beep();
 }
 
-// ── Urban: low rumble + random explosions ──────────────────
-function startUrbanAudio() {
-  const ac = getAudioCtx();
-
-  // Continuous low rumble: noise → lowpass → gain
-  const src = ac.createBufferSource();
-  src.buffer = makeNoiseBuffer(ac, 2); src.loop = true;
-  const lpf = ac.createBiquadFilter(); lpf.type = 'lowpass'; lpf.frequency.value = 90;
-  const gain = ac.createGain(); gain.gain.value = 0.12;
-  src.connect(lpf); lpf.connect(gain); gain.connect(ac.destination);
-  src.start(); audioNodes.push(src);
-
-  // Sub-bass rumble oscillator
-  const sub = ac.createOscillator(); sub.type = 'sine'; sub.frequency.value = 42;
-  const subG = ac.createGain(); subG.gain.value = 0.06;
-  sub.connect(subG); subG.connect(ac.destination); sub.start(); audioNodes.push(sub);
-
-  // Scheduled booms
-  function triggerBoom() {
-    const boom = ac.createBufferSource();
-    boom.buffer = makeNoiseBuffer(ac, 0.8);
-    const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 180;
-    const g = ac.createGain();
-    const now = ac.currentTime;
-    g.gain.setValueAtTime(0, now);
-    g.gain.linearRampToValueAtTime(0.45, now + 0.02);
-    g.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
-    boom.connect(lp); lp.connect(g); g.connect(ac.destination); boom.start();
-    // Short crack on top
-    const crack = ac.createOscillator(); crack.type = 'sawtooth'; crack.frequency.value = 80;
-    const cg = ac.createGain();
-    cg.gain.setValueAtTime(0.2, now); cg.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
-    crack.connect(cg); cg.connect(ac.destination); crack.start(); crack.stop(now + 0.1); audioNodes.push(crack);
-  }
-  function scheduleBoom() {
-    const delay = 5000 + Math.random() * 12000;
-    boomTimer = setTimeout(() => { triggerBoom(); scheduleBoom(); }, delay);
-  }
-  // First boom after 2-4s
-  boomTimer = setTimeout(() => { triggerBoom(); scheduleBoom(); }, 2000 + Math.random() * 2000);
-}
-
-// ── Road: ambulance siren (distant, hi-lo) ─────────────────
-function startRoadAudio() {
-  const ac = getAudioCtx();
-
-  // Hi-lo siren: two oscillators crossfading via LFO
-  const osc = ac.createOscillator();
-  osc.type = 'sawtooth'; osc.frequency.value = 660;
-
-  // LFO to modulate frequency between 570Hz and 770Hz
-  const lfo = ac.createOscillator(); lfo.frequency.value = 0.85;
-  const lfoG = ac.createGain(); lfoG.gain.value = 100;
-  lfo.connect(lfoG); lfoG.connect(osc.frequency);
-
-  // Soft filter (muffled, distant)
-  const bpf = ac.createBiquadFilter(); bpf.type = 'bandpass'; bpf.frequency.value = 660; bpf.Q.value = 0.8;
-  const gain = ac.createGain(); gain.gain.value = 0.055;
-
-  // Reverb-like convolver for distance feel
-  osc.connect(bpf); bpf.connect(gain); gain.connect(ac.destination);
-
-  // Doppler wobble
-  const wobble = ac.createOscillator(); wobble.frequency.value = 4.5; wobble.type = 'sine';
-  const wobG = ac.createGain(); wobG.gain.value = 8;
-  wobble.connect(wobG); wobG.connect(osc.frequency);
-
-  lfo.start(); osc.start(); wobble.start();
-  audioNodes.push(osc, lfo, wobble);
-
-  // Add faint white noise for street ambiance
-  const ns = ac.createBufferSource(); ns.buffer = makeNoiseBuffer(ac, 2); ns.loop = true;
-  const nlp = ac.createBiquadFilter(); nlp.type = 'bandpass'; nlp.frequency.value = 1200; nlp.Q.value = 0.5;
-  const ng = ac.createGain(); ng.gain.value = 0.025;
-  ns.connect(nlp); nlp.connect(ng); ng.connect(ac.destination); ns.start(); audioNodes.push(ns);
-}
-
-// ── Medical: heart monitor + ambient hum ───────────────────
-function startMedicalAudio() {
-  const ac = getAudioCtx();
-
-  // Ambient low hum
-  const hum = ac.createOscillator(); hum.type = 'sine'; hum.frequency.value = 55;
-  const humG = ac.createGain(); humG.gain.value = 0.025;
-  hum.connect(humG); humG.connect(ac.destination); hum.start(); audioNodes.push(hum);
-
-  // HVAC / ventilator hiss
-  const ns = ac.createBufferSource(); ns.buffer = makeNoiseBuffer(ac, 2); ns.loop = true;
-  const nhp = ac.createBiquadFilter(); nhp.type = 'highpass'; nhp.frequency.value = 2000;
-  const ng = ac.createGain(); ng.gain.value = 0.018;
-  ns.connect(nhp); nhp.connect(ng); ng.connect(ac.destination); ns.start(); audioNodes.push(ns);
-
-  // Heart monitor beep
-  function scheduleBeep() {
-    const osc = ac.createOscillator(); osc.type = 'sine'; osc.frequency.value = 880;
-    const g = ac.createGain(); const now = ac.currentTime;
-    g.gain.setValueAtTime(0, now);
-    g.gain.linearRampToValueAtTime(0.18, now + 0.012);
-    g.gain.linearRampToValueAtTime(0, now + 0.1);
-    osc.connect(g); g.connect(ac.destination);
-    osc.start(now); osc.stop(now + 0.12); audioNodes.push(osc);
-    beepTimer = setTimeout(scheduleBeep, 760 + Math.random() * 80);
-  }
-  scheduleBeep();
-}
-
-function startSceneAudio(type) {
-  stopAllAudio();
-  const noiseEnabled = document.getElementById('noise-toggle').checked;
-  if (!noiseEnabled) return;
-  try {
-    if (type === 'urban')   startUrbanAudio();
-    else if (type === 'road')    startRoadAudio();
-    else                         startMedicalAudio();
-  } catch(e) {}
-}
+function startSceneAudio(type){ stopAllAudio(); if(!document.getElementById('noise-toggle').checked) return; try{ if(type==='urban') startUrbanAudio(); else if(type==='road') startRoadAudio(); else startMedicalAudio(); }catch(e){} }
 
 // ═══════════════════════════════════════════════════════════
-// iOS Safari detection
+//  iOS detection
 // ═══════════════════════════════════════════════════════════
-const isIosSafari = /iP(hone|ad|od)/.test(navigator.userAgent) &&
-  /WebKit/.test(navigator.userAgent) && !/CriOS/.test(navigator.userAgent) && !/FxiOS/.test(navigator.userAgent);
-if (isIosSafari) document.getElementById('ios-warning').classList.remove('hidden');
+const isIosSafari=/iP(hone|ad|od)/.test(navigator.userAgent)&&/WebKit/.test(navigator.userAgent)&&!/CriOS/.test(navigator.userAgent)&&!/FxiOS/.test(navigator.userAgent);
+if(isIosSafari) document.getElementById('ios-warning').classList.remove('hidden');
 
 // ═══════════════════════════════════════════════════════════
-// API keys
+//  API keys
 // ═══════════════════════════════════════════════════════════
-const KEY_STORAGE  = 'mist_api_key';
-const GROQ_KEY_STORAGE = 'mist_groq_key';
-const ACCESS_CODE_STORAGE = 'mist_access_code';
-let apiKey  = localStorage.getItem(KEY_STORAGE) || '';
-let groqKey = localStorage.getItem(GROQ_KEY_STORAGE) || '';
+const KS='mist_api_key', GKS='mist_groq_key', ACS='mist_access_code';
+let apiKey=localStorage.getItem(KS)||'', groqKey=localStorage.getItem(GKS)||'';
+const settingsOverlay=document.getElementById('settings-overlay');
+const apiKeyInput=document.getElementById('api-key-input'), groqKeyInput=document.getElementById('groq-key-input');
+const panelCode=document.getElementById('panel-code'), panelManual=document.getElementById('panel-manual');
+const tabCodeBtn=document.getElementById('tab-code-btn'), tabManualBtn=document.getElementById('tab-manual-btn');
 
-const settingsOverlay = document.getElementById('settings-overlay');
-const apiKeyInput  = document.getElementById('api-key-input');
-const groqKeyInput = document.getElementById('groq-key-input');
+function showTab(t){ if(t==='code'){ panelCode.classList.remove('hidden'); panelManual.classList.add('hidden'); tabCodeBtn.classList.add('active'); tabManualBtn.classList.remove('active'); }else{ panelManual.classList.remove('hidden'); panelCode.classList.add('hidden'); tabManualBtn.classList.add('active'); tabCodeBtn.classList.remove('active'); } }
+tabCodeBtn.addEventListener('click',()=>showTab('code')); tabManualBtn.addEventListener('click',()=>showTab('manual'));
+function openSettings(){ apiKeyInput.value=apiKey; groqKeyInput.value=groqKey; if(apiKey&&groqKey) showTab('manual'); else showTab('code'); settingsOverlay.classList.remove('hidden'); }
+function closeSettings(){ settingsOverlay.classList.add('hidden'); }
 
-// Settings tabs
-const panelCode   = document.getElementById('panel-code');
-const panelManual = document.getElementById('panel-manual');
-const tabCodeBtn  = document.getElementById('tab-code-btn');
-const tabManualBtn = document.getElementById('tab-manual-btn');
-
-function showTab(tab) {
-  if (tab === 'code') {
-    panelCode.classList.remove('hidden'); panelManual.classList.add('hidden');
-    tabCodeBtn.classList.add('active'); tabManualBtn.classList.remove('active');
-  } else {
-    panelManual.classList.remove('hidden'); panelCode.classList.add('hidden');
-    tabManualBtn.classList.add('active'); tabCodeBtn.classList.remove('active');
-  }
-}
-tabCodeBtn.addEventListener('click', () => showTab('code'));
-tabManualBtn.addEventListener('click', () => showTab('manual'));
-
-function openSettings()  { apiKeyInput.value = apiKey; groqKeyInput.value = groqKey; if (apiKey && groqKey) showTab('manual'); else showTab('code'); settingsOverlay.classList.remove('hidden'); }
-function closeSettings() { settingsOverlay.classList.add('hidden'); }
-
-async function initKeys() {
-  if (apiKey && groqKey) return;
-  const savedCode = localStorage.getItem(ACCESS_CODE_STORAGE);
-  if (!savedCode) { openSettings(); return; }
-  try {
-    const res = await fetch('/api/unlock', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({code:savedCode}) });
-    const data = await res.json();
-    if (res.ok && data.anthropicKey && data.groqKey) {
-      apiKey = data.anthropicKey; groqKey = data.groqKey;
-      localStorage.setItem(KEY_STORAGE, apiKey); localStorage.setItem(GROQ_KEY_STORAGE, groqKey);
-    } else { localStorage.removeItem(ACCESS_CODE_STORAGE); openSettings(); }
-  } catch { if (!apiKey || !groqKey) openSettings(); }
+async function initKeys(){
+  if(apiKey&&groqKey) return;
+  const saved=localStorage.getItem(ACS);
+  if(!saved){ openSettings(); return; }
+  try{ const res=await fetch('/api/unlock',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:saved})}); const data=await res.json(); if(res.ok&&data.anthropicKey&&data.groqKey){ apiKey=data.anthropicKey; groqKey=data.groqKey; localStorage.setItem(KS,apiKey); localStorage.setItem(GKS,groqKey); }else{ localStorage.removeItem(ACS); openSettings(); } }catch{ if(!apiKey||!groqKey) openSettings(); }
 }
 initKeys();
-
 document.getElementById('gear-btn').addEventListener('click', openSettings);
 
-document.getElementById('save-key-btn').addEventListener('click', () => {
-  const k = apiKeyInput.value.trim(), gk = groqKeyInput.value.trim();
-  let err = false;
-  if (!k.startsWith('sk-'))  { apiKeyInput.style.borderColor  = 'var(--danger)'; err = true; } else apiKeyInput.style.borderColor = '';
-  if (!gk.startsWith('gsk_')) { groqKeyInput.style.borderColor = 'var(--danger)'; err = true; } else groqKeyInput.style.borderColor = '';
-  if (err) return;
-  apiKey = k; groqKey = gk;
-  localStorage.setItem(KEY_STORAGE, k); localStorage.setItem(GROQ_KEY_STORAGE, gk);
-  closeSettings();
+document.getElementById('save-key-btn').addEventListener('click',()=>{
+  const k=apiKeyInput.value.trim(), gk=groqKeyInput.value.trim(); let err=false;
+  if(!k.startsWith('sk-')){ apiKeyInput.style.borderColor='var(--danger)'; err=true; }else apiKeyInput.style.borderColor='';
+  if(!gk.startsWith('gsk_')){ groqKeyInput.style.borderColor='var(--danger)'; err=true; }else groqKeyInput.style.borderColor='';
+  if(err) return; apiKey=k; groqKey=gk; localStorage.setItem(KS,k); localStorage.setItem(GKS,gk); closeSettings();
 });
 
-const unlockStatus = document.getElementById('unlock-status');
-const accessCodeInput = document.getElementById('access-code-input');
-
-async function doUnlock() {
-  const code = accessCodeInput.value.trim(); if (!code) return;
-  unlockStatus.textContent = '⏳ 驗證中...'; unlockStatus.className = '';
-  document.getElementById('unlock-btn').disabled = true;
-  try {
-    const res = await fetch('/api/unlock', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({code}) });
-    const data = await res.json();
-    if (res.ok && data.anthropicKey && data.groqKey) {
-      apiKey = data.anthropicKey; groqKey = data.groqKey;
-      localStorage.setItem(KEY_STORAGE, apiKey); localStorage.setItem(GROQ_KEY_STORAGE, groqKey);
-      localStorage.setItem(ACCESS_CODE_STORAGE, code);
-      unlockStatus.textContent = '✅ 解鎖成功！'; unlockStatus.className = 'ok';
-      setTimeout(closeSettings, 800);
-    } else if (res.status === 401) { unlockStatus.textContent = '❌ 通行碼錯誤'; unlockStatus.className = 'err'; }
-    else if (res.status === 503) { unlockStatus.textContent = '⚠️ 伺服器尚未設定，請改用手動輸入'; unlockStatus.className = 'err'; }
-    else { unlockStatus.textContent = '❌ 發生錯誤，請再試一次'; unlockStatus.className = 'err'; }
-  } catch { unlockStatus.textContent = '❌ 網路錯誤，請再試一次'; unlockStatus.className = 'err'; }
-  document.getElementById('unlock-btn').disabled = false;
+const unlockStatus=document.getElementById('unlock-status'), aci=document.getElementById('access-code-input');
+async function doUnlock(){
+  const code=aci.value.trim(); if(!code) return;
+  unlockStatus.textContent='⏳ 驗證中…'; unlockStatus.className=''; document.getElementById('unlock-btn').disabled=true;
+  try{ const res=await fetch('/api/unlock',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code})}); const data=await res.json();
+    if(res.ok&&data.anthropicKey&&data.groqKey){ apiKey=data.anthropicKey; groqKey=data.groqKey; localStorage.setItem(KS,apiKey); localStorage.setItem(GKS,groqKey); localStorage.setItem(ACS,code); unlockStatus.textContent='✅ 解鎖成功！'; unlockStatus.className='ok'; setTimeout(closeSettings,800); }
+    else if(res.status===401){ unlockStatus.textContent='❌ 通行碼錯誤'; unlockStatus.className='err'; }
+    else if(res.status===503){ unlockStatus.textContent='⚠️ 伺服器尚未設定，請改用手動輸入'; unlockStatus.className='err'; }
+    else{ unlockStatus.textContent='❌ 發生錯誤，請再試一次'; unlockStatus.className='err'; }
+  }catch{ unlockStatus.textContent='❌ 網路錯誤，請再試一次'; unlockStatus.className='err'; }
+  document.getElementById('unlock-btn').disabled=false;
 }
-document.getElementById('unlock-btn').addEventListener('click', doUnlock);
-accessCodeInput.addEventListener('keydown', e => { if (e.key === 'Enter') doUnlock(); });
+document.getElementById('unlock-btn').addEventListener('click',doUnlock);
+aci.addEventListener('keydown',e=>{ if(e.key==='Enter') doUnlock(); });
 
 // ═══════════════════════════════════════════════════════════
-// Scenario management
+//  Scenario management
 // ═══════════════════════════════════════════════════════════
-let currentScenarioIndex = -1;
+let currentScenarioIndex=-1;
+function pickRandom(excl){ if(SCENARIOS.length<=1) return 0; let i; do{ i=Math.floor(Math.random()*SCENARIOS.length); }while(i===excl); return i; }
+function currentScenario(){ return SCENARIOS[currentScenarioIndex]; }
+function detectSceneType(sc){ const t=(sc.title||'').toLowerCase(); if(['cardiac','chemical','medical','triage','poison','心臟','化學','醫療','神經','毒','燒'].some(k=>t.includes(k))) return 'medical'; if(['mva','vehicle','fall','evacuation','accident','collision','車','墜','疏散','公路','交通'].some(k=>t.includes(k))) return 'road'; return 'urban'; }
 
-function pickRandomScenario(exclude) {
-  if (SCENARIOS.length <= 1) return 0;
-  let idx;
-  do { idx = Math.floor(Math.random() * SCENARIOS.length); } while (idx === exclude);
-  return idx;
-}
-function currentScenario() { return SCENARIOS[currentScenarioIndex]; }
-
-function detectSceneType(scenario) {
-  const t = (scenario.title || '').toLowerCase();
-  if (['cardiac','chemical','medical','triage','poison','心臟','化學','醫療','神經'].some(k => t.includes(k))) return 'medical';
-  if (['mva','vehicle','fall','evacuation','accident','collision','車','墜','疏散','公路','交通'].some(k => t.includes(k))) return 'road';
-  return 'urban';
-}
-
-function setScenario(index) {
-  currentScenarioIndex = index;
-  const sc = SCENARIOS[index];
-  const isPressure = sc.difficulty === 'pressure';
-
-  document.getElementById('scenario-title').textContent = sc.title;
-  document.getElementById('scenario-emoji').textContent = isPressure ? '🚨' : '🎯';
-  document.getElementById('scenario-card').className = 'card' + (isPressure ? ' pressure-mode' : '');
-  const badgeDiff = document.getElementById('badge-difficulty');
-  badgeDiff.textContent = isPressure ? '高壓模式' : '標準模式';
-  badgeDiff.className = 'badge' + (isPressure ? ' pressure' : '');
-  document.getElementById('badge-time').textContent = `${sc.timeLimitSec}秒限制`;
-
-  // Update canvas scene
-  sceneType = detectSceneType(sc);
-  sceneParticles = [];
-
+function setScenario(idx){
+  currentScenarioIndex=idx;
+  const sc=SCENARIOS[idx], ip=sc.difficulty==='pressure';
+  document.getElementById('scenario-title').textContent=sc.title;
+  const bd=document.getElementById('badge-difficulty'); bd.textContent=ip?'高壓模式':'標準模式'; bd.className='pill-badge '+(ip?'pressure':'standard');
+  document.getElementById('badge-time').textContent=`${sc.timeLimitSec}秒限制`;
+  sceneType=detectSceneType(sc); sceneParticles=[];
   resetUI();
 }
 
-// Initial pick
-setScenario(pickRandomScenario(-1));
-document.getElementById('random-btn').addEventListener('click', () => setScenario(pickRandomScenario(currentScenarioIndex)));
+// Scenario pill click → random
+document.getElementById('scenario-pill').addEventListener('click',()=>setScenario(pickRandom(currentScenarioIndex)));
+document.getElementById('random-btn').addEventListener('click',()=>setScenario(pickRandom(currentScenarioIndex)));
+setScenario(pickRandom(-1));
 
 // ═══════════════════════════════════════════════════════════
-// Timer
+//  Timer
 // ═══════════════════════════════════════════════════════════
-const CIRCUMFERENCE = 339.29;
-const timerDisplay = document.getElementById('timer-display');
-const timerCircle  = document.getElementById('timer-circle');
-const pulseIcon    = document.getElementById('pulse-icon');
-const recordCard   = document.getElementById('record-card');
-const recordBtn    = document.getElementById('record-btn');
-const errorBanner  = document.getElementById('error-banner');
-const errorMsg     = document.getElementById('error-msg');
-const retryBtn     = document.getElementById('retry-btn');
-const loadingCard  = document.getElementById('loading-card');
-const resultsCard  = document.getElementById('results-card');
-
-function updateTimer({ elapsed, limit }) {
-  const remaining = Math.max(0, limit - elapsed);
-  timerCircle.style.strokeDashoffset = CIRCUMFERENCE * (1 - Math.max(0, 1 - elapsed / limit));
-  timerDisplay.textContent = remaining < 10 ? remaining.toFixed(1) : Math.ceil(remaining).toString();
-  if (elapsed > limit) { timerDisplay.classList.add('over'); timerCircle.classList.add('pressure'); }
-}
-function resetTimer() {
-  timerDisplay.textContent = '—'; timerDisplay.classList.remove('over');
-  timerCircle.style.strokeDashoffset = '0'; timerCircle.classList.remove('pressure');
-  pulseIcon.classList.remove('visible');
-}
+const CIRC=163.36;
+const timerDisplay=document.getElementById('timer-display'), timerCircle=document.getElementById('timer-circle'), pulseIcon=document.getElementById('pulse-icon');
+function updateTimer({elapsed,limit}){ const rem=Math.max(0,limit-elapsed); timerCircle.style.strokeDashoffset=CIRC*(elapsed/limit); timerDisplay.textContent=rem<10?rem.toFixed(1):Math.ceil(rem)+''; if(elapsed>limit){ timerDisplay.classList.add('over'); timerCircle.classList.add('pressure'); } }
+function resetTimer(){ timerDisplay.textContent='—'; timerDisplay.classList.remove('over'); timerCircle.style.strokeDashoffset='0'; timerCircle.classList.remove('pressure'); pulseIcon.classList.remove('visible'); }
 
 // ═══════════════════════════════════════════════════════════
-// Recording
+//  Recording
 // ═══════════════════════════════════════════════════════════
-let isRecording = false;
+let isRecording=false;
+const recordBtn=document.getElementById('record-btn');
 
-recordBtn.addEventListener('click', () => {
-  if (!apiKey || !groqKey) { openSettings(); return; }
-  if (isRecording) { Speech.stop(); return; }
-  startRecording();
-});
+recordBtn.addEventListener('click',()=>{ if(!apiKey||!groqKey){ openSettings(); return; } if(isRecording){ Speech.stop(); return; } startRecording(); });
 
-function startRecording() {
-  if (!Speech.isSupported()) { showTextFallback(); return; }
-  isRecording = true;
-  recordBtn.textContent = '⏹ 停止錄音';
-  recordBtn.classList.add('recording');
-  recordCard.classList.add('recording-active');
-  pulseIcon.classList.add('visible');
-  resultsCard.classList.add('hidden');
-  errorBanner.classList.add('hidden');
-  document.getElementById('interim-text').textContent = '';
-  document.getElementById('low-confidence-warning').hidden = true;
-
+function startRecording(){
+  if(!Speech.isSupported()){ showTextFallback(); return; }
+  isRecording=true; recordBtn.textContent='⏹ 停止錄音'; recordBtn.classList.add('recording'); pulseIcon.classList.add('visible');
+  document.getElementById('results-overlay').classList.remove('visible');
+  document.getElementById('error-banner').classList.add('hidden');
+  document.getElementById('interim-text').textContent=''; document.getElementById('interim-text').classList.add('visible');
+  document.getElementById('low-confidence-warning').classList.add('hidden');
   startSceneAudio(sceneType);
-
-  const sc = currentScenario();
-  Speech.start({
-    limit: sc.timeLimitSec,
-    onTick: updateTimer,
-    groqKey,
-    onFinal: ({ transcript, durationSec }) => {
-      isRecording = false;
-      recordBtn.textContent = '⏺ 開始錄音';
-      recordBtn.classList.remove('recording');
-      recordCard.classList.remove('recording-active');
-      pulseIcon.classList.remove('visible');
-      stopAllAudio();
-      runEvaluation(transcript, durationSec, sc);
-    },
-    onErr: handleSpeechError,
-  });
+  const sc=currentScenario();
+  Speech.start({ limit:sc.timeLimitSec, onTick:updateTimer, groqKey, onFinal:({transcript,durationSec})=>{ isRecording=false; recordBtn.textContent='⏺ 開始錄音'; recordBtn.classList.remove('recording'); pulseIcon.classList.remove('visible'); document.getElementById('interim-text').classList.remove('visible'); stopAllAudio(); runEvaluation(transcript,durationSec,sc); }, onErr:handleSpeechError });
 }
 
-function handleSpeechError(type) {
-  isRecording = false;
-  recordBtn.textContent = '⏺ 開始錄音';
-  recordBtn.classList.remove('recording');
-  recordCard.classList.remove('recording-active');
-  pulseIcon.classList.remove('visible');
-  stopAllAudio();
-  resetTimer();
-  const messages = {
-    'mic-denied': '需要麥克風權限。請在瀏覽器設定中允許麥克風，然後重試。',
-    'no-speech':  '未偵測到語音，請點擊錄音後開始說話。',
-    'groq-invalid-key': 'Groq API 金鑰無效，請在設定中更新。',
-    'unknown': '語音辨識錯誤，請重試。',
-  };
-  if (type === 'network') { showTextFallback(); return; }
-  if (type === 'groq-invalid-key') { openSettings(); return; }
-  errorMsg.textContent = messages[type] || '語音辨識錯誤，請重試。';
-  retryBtn.textContent = '再試一次';
-  retryBtn.onclick = startRecording;
-  errorBanner.classList.remove('hidden');
+function handleSpeechError(type){
+  isRecording=false; recordBtn.textContent='⏺ 開始錄音'; recordBtn.classList.remove('recording'); pulseIcon.classList.remove('visible'); document.getElementById('interim-text').classList.remove('visible'); stopAllAudio(); resetTimer();
+  const msgs={'mic-denied':'需要麥克風權限，請在瀏覽器設定中允許。','no-speech':'未偵測到語音，請點擊後開始說話。','groq-invalid-key':'Groq 金鑰無效，請在設定中更新。','unknown':'語音辨識錯誤，請重試。'};
+  if(type==='network'){ showTextFallback(); return; } if(type==='groq-invalid-key'){ openSettings(); return; }
+  document.getElementById('error-msg').textContent=msgs[type]||'語音辨識錯誤，請重試。'; document.getElementById('retry-btn').onclick=startRecording; document.getElementById('error-banner').classList.remove('hidden');
 }
-retryBtn.addEventListener('click', () => errorBanner.classList.add('hidden'));
+document.getElementById('retry-btn').addEventListener('click',()=>document.getElementById('error-banner').classList.add('hidden'));
 
-function showTextFallback() {
-  document.getElementById('text-fallback').style.display = 'block';
-  recordBtn.style.display = 'none';
-}
-document.getElementById('submit-text-btn').addEventListener('click', () => {
-  const text = document.getElementById('fallback-textarea').value.trim();
-  if (!text) return;
-  runEvaluation(text, currentScenario().timeLimitSec, currentScenario());
-});
+function showTextFallback(){ document.getElementById('text-fallback').style.display='flex'; recordBtn.style.display='none'; }
+document.getElementById('submit-text-btn').addEventListener('click',()=>{ const t=document.getElementById('fallback-textarea').value.trim(); if(!t) return; runEvaluation(t,currentScenario().timeLimitSec,currentScenario()); });
 
 // ═══════════════════════════════════════════════════════════
-// Evaluation
+//  Evaluation
 // ═══════════════════════════════════════════════════════════
-async function runEvaluation(transcript, durationSec, scenario) {
-  resetTimer();
-  loadingCard.classList.remove('hidden');
-  resultsCard.classList.add('hidden');
-  errorBanner.classList.add('hidden');
-  recordBtn.disabled = true;
-  try {
-    const result = await evaluate(scenario, transcript, durationSec, apiKey);
-    loadingCard.classList.add('hidden');
-    recordBtn.disabled = false;
-    if (result.error === 'invalid_key') { openSettings(); return; }
-    if (result.error === 'rate_limit') { showEvalError('API 請求頻率過高，請稍後再試。', startRecording); return; }
-    if (result.error === 'timeout')    { showEvalError('評估逾時，請重試。', startRecording); return; }
-    if (result.error) { showEvalError(`評估失敗（${result.error}）：${result.message || '請重試'}`, startRecording); return; }
-    showResults(result, durationSec, scenario);
-  } catch (err) {
-    loadingCard.classList.add('hidden');
-    recordBtn.disabled = false;
-    const code = err && (err.code || err.message) || 'unknown';
-    if (code === 'invalid_key') { openSettings(); return; }
-    showEvalError(`發生未預期錯誤（${code}），請重試。`, startRecording);
+async function runEvaluation(transcript,durationSec,scenario){
+  resetTimer(); document.getElementById('loading-overlay').classList.add('visible');
+  document.getElementById('results-overlay').classList.remove('visible');
+  document.getElementById('error-banner').classList.add('hidden'); recordBtn.disabled=true;
+  try{
+    const result=await evaluate(scenario,transcript,durationSec,apiKey);
+    document.getElementById('loading-overlay').classList.remove('visible'); recordBtn.disabled=false;
+    if(result.error==='invalid_key'){ openSettings(); return; }
+    if(result.error==='rate_limit'){ showEvalError('API 請求頻率過高，請稍後再試。'); return; }
+    if(result.error==='timeout'){ showEvalError('評估逾時，請重試。'); return; }
+    if(result.error){ showEvalError(`評估失敗：${result.message||'請重試'}`); return; }
+    showResults(result,durationSec,scenario);
+  }catch(err){
+    document.getElementById('loading-overlay').classList.remove('visible'); recordBtn.disabled=false;
+    const code=err&&(err.code||err.message)||'unknown';
+    if(code==='invalid_key'){ openSettings(); return; }
+    showEvalError(`發生錯誤（${code}），請重試。`);
   }
 }
+function showEvalError(msg){ document.getElementById('error-msg').textContent=msg; document.getElementById('retry-btn').onclick=startRecording; document.getElementById('error-banner').classList.remove('hidden'); }
+function pct(n){ return Math.round(n*100)+'%'; }
+function scoreClass(n){ return n>=.8?'good':n>=.5?'warn':'bad'; }
+function applyBox(bid,vid,val,txt){ document.getElementById(bid).className='score-box '+(typeof val==='number'?scoreClass(val):'warn'); document.getElementById(vid).textContent=txt; }
 
-function showEvalError(msg, onRetry) {
-  errorMsg.textContent = msg;
-  retryBtn.textContent = '再試一次'; retryBtn.onclick = onRetry;
-  errorBanner.classList.remove('hidden');
+function showResults(result,durationSec,scenario){
+  const{scores,hedges,gaps,modelAnswer}=result;
+  applyBox('box-completeness','r-completeness',scores.completeness,pct(scores.completeness));
+  applyBox('box-precision','r-precision',scores.precision,pct(scores.precision));
+  const{withinTime,durationSec:dur}=scores.fluency;
+  applyBox('box-fluency','r-fluency',withinTime?1:0,withinTime?`${Math.round(dur)}s ✓`:`${Math.round(dur)}s ✗`);
+  const sm={'MIST':1,'incomplete':0}; applyBox('box-structure','r-structure',sm[scores.structure]!==undefined?sm[scores.structure]:.5,scores.structure);
+  const hs=document.getElementById('hedges-section'), hl=document.getElementById('r-hedges'); hl.innerHTML='';
+  if(hedges&&hedges.length){ hs.classList.remove('hidden'); hedges.forEach(h=>{const li=document.createElement('li');li.textContent=h;hl.appendChild(li);}); }else hs.classList.add('hidden');
+  const gs=document.getElementById('gaps-section'), gl=document.getElementById('r-gaps'); gl.innerHTML='';
+  if(gaps&&gaps.length){ gs.classList.remove('hidden'); gaps.forEach(g=>{const li=document.createElement('li');li.textContent=g;gl.appendChild(li);}); }else gs.classList.add('hidden');
+  document.getElementById('r-model-answer').textContent=modelAnswer||'';
+  document.getElementById('results-overlay').classList.add('visible');
 }
 
-function pct(n) { return Math.round(n * 100) + '%'; }
-function scoreClass(n) { if (n >= 0.8) return 'good'; if (n >= 0.5) return 'warn'; return 'bad'; }
-function applyScoreBox(boxId, valueId, value, text) {
-  const cls = typeof value === 'number' ? scoreClass(value) : 'warn';
-  document.getElementById(boxId).className = 'score-box ' + cls;
-  document.getElementById(valueId).textContent = text;
-}
+document.getElementById('try-again-btn').addEventListener('click',()=>{ document.getElementById('results-overlay').classList.remove('visible'); setScenario(pickRandom(currentScenarioIndex)); });
 
-function showResults(result, durationSec, scenario) {
-  const { scores, hedges, gaps, modelAnswer } = result;
-  applyScoreBox('box-completeness', 'r-completeness', scores.completeness, pct(scores.completeness));
-  applyScoreBox('box-precision',    'r-precision',    scores.precision,    pct(scores.precision));
-  const { withinTime, durationSec: dur } = scores.fluency;
-  applyScoreBox('box-fluency', 'r-fluency', withinTime?1:0, withinTime?`${Math.round(dur)}s ✓`:`${Math.round(dur)}s ✗`);
-  const sm = { 'MIST':1, 'incomplete':0 };
-  applyScoreBox('box-structure', 'r-structure', sm[scores.structure]!==undefined?sm[scores.structure]:0.5, scores.structure);
-
-  const hedgesSection = document.getElementById('hedges-section');
-  const hedgesList = document.getElementById('r-hedges');
-  hedgesList.innerHTML = '';
-  if (hedges && hedges.length > 0) {
-    hedgesSection.classList.remove('hidden');
-    hedges.forEach(h => { const li = document.createElement('li'); li.textContent = h; hedgesList.appendChild(li); });
-  } else hedgesSection.classList.add('hidden');
-
-  const gapsSection = document.getElementById('gaps-section');
-  const gapsList = document.getElementById('r-gaps');
-  gapsList.innerHTML = '';
-  if (gaps && gaps.length > 0) {
-    gapsSection.classList.remove('hidden');
-    gaps.forEach(g => { const li = document.createElement('li'); li.textContent = g; gapsList.appendChild(li); });
-  } else gapsSection.classList.add('hidden');
-
-  document.getElementById('r-model-answer').textContent = modelAnswer || '';
-  resultsCard.classList.remove('hidden');
-  resultsCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
-
-document.getElementById('try-again-btn').addEventListener('click', () => setScenario(pickRandomScenario(currentScenarioIndex)));
-
-function resetUI() {
-  resultsCard.classList.add('hidden');
-  loadingCard.classList.add('hidden');
-  errorBanner.classList.add('hidden');
-  document.getElementById('text-fallback').style.display = 'none';
-  recordBtn.style.display = '';
-  document.getElementById('interim-text').textContent = '';
-  document.getElementById('low-confidence-warning').hidden = true;
-  recordCard.classList.remove('recording-active');
-  pulseIcon.classList.remove('visible');
-  resetTimer();
-  timerCircle.className = currentScenario().difficulty === 'pressure' ? 'pressure' : '';
+function resetUI(){
+  document.getElementById('results-overlay').classList.remove('visible');
+  document.getElementById('loading-overlay').classList.remove('visible');
+  document.getElementById('error-banner').classList.add('hidden');
+  document.getElementById('text-fallback').style.display='none'; recordBtn.style.display='';
+  document.getElementById('interim-text').textContent=''; document.getElementById('interim-text').classList.remove('visible');
+  document.getElementById('low-confidence-warning').classList.add('hidden');
+  recordBtn.classList.remove('recording'); pulseIcon.classList.remove('visible');
+  resetTimer(); timerCircle.className=currentScenario().difficulty==='pressure'?'pressure':'';
 }
 </script>
 </body>
